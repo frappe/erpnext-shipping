@@ -1,6 +1,6 @@
 ## ERPNext Shipping
 
-A Shipping Integration fir ERPNext
+A Shipping Integration for ERPNext
 
 #### License
 
