@@ -10,7 +10,7 @@ from erpnext_shipping import __version__ as version
 setup(
 	name='erpnext_shipping',
 	version=version,
-	description='A Shipping Integration fir ERPNext',
+	description='A Shipping Integration for ERPNext',
 	author='Frappe',
 	author_email='developers@frappe.io',
 	packages=find_packages(),
