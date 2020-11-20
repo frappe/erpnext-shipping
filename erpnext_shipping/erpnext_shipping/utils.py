@@ -8,6 +8,7 @@ from frappe import _
 from frappe.utils import flt
 from erpnext.accounts.party import get_party_shipping_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
+from erpnext.stock.doctype.shipment.shipment import get_company_contact, get_address_name, get_contact_name
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, get_letmeship_available_services, create_letmeship_shipment, get_letmeship_label, get_letmeship_tracking_data
 from erpnext_shipping.erpnext_shipping.doctype.packlink.packlink import PACKLINK_PROVIDER, get_packlink_available_services, create_packlink_shipment, get_packlink_label, get_packlink_tracking_data
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, get_sendcloud_available_services, create_sendcloud_shipment, get_sendcloud_label, get_sendcloud_tracking_data
@@ -175,16 +176,6 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=[]):
 		frappe.db.set_value('Shipment', shipment, 'tracking_status_info', tracking_data.get('tracking_status_info'))
 		frappe.db.set_value('Shipment', shipment, 'tracking_url', tracking_data.get('tracking_url'))
 
-@frappe.whitelist()
-def get_address_name(ref_doctype, docname):
-	# Return address name
-	return get_party_shipping_address(ref_doctype, docname)
-
-@frappe.whitelist()
-def get_contact_name(ref_doctype, docname):
-	# Return address name
-	return get_default_contact(ref_doctype, docname)
-
 def update_delivery_note(delivery_notes, shipment_info=None, tracking_info=None):
 	# Update Shipment Info in Delivery Note
 	# Using db_set since some services might not exist
@@ -268,17 +259,3 @@ def match_parcel_service_type_carrier(shipment_prices, reference):
 		shipment_prices[idx].service_name = service_name
 		shipment_prices[idx].is_preferred = is_preferred
 	return shipment_prices
-
-@frappe.whitelist()
-def get_company_contact(user):
-	contact = frappe.db.get_value('User', user, [
-		'first_name',
-		'last_name',
-		'email',
-		'phone',
-		'mobile_no',
-		'gender',
-	], as_dict=1)
-	if not contact.phone:
-		contact.phone = contact.mobile_no
-	return contact
