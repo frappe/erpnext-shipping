@@ -9,7 +9,6 @@ import json
 import re
 from frappe import _
 from frappe.model.document import Document
-from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
 
 LETMESHIP_PROVIDER = 'LetMeShip'
 
@@ -308,6 +307,7 @@ def get_letmeship_label(shipment_id):
 
 
 def get_letmeship_tracking_data(shipment_id):
+	from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
 	# return letmeship tracking data
 	api_id = frappe.db.get_single_value('LetMeShip','api_id')
 	api_password = frappe.db.get_single_value('LetMeShip','api_password')

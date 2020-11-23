@@ -8,7 +8,6 @@ import frappe
 import requests
 from frappe import _
 from frappe.model.document import Document
-from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
 
 PACKLINK_PROVIDER = 'Packlink'
 
@@ -185,6 +184,8 @@ def get_packlink_label(shipment_id):
 
 def get_packlink_tracking_data(shipment_id):
 	# Get Packlink Tracking Info
+	from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
+
 	enabled = frappe.db.get_single_value('Packlink', 'enabled')
 	if not enabled:
 		frappe.throw(_('Packlink integration is not enabled'))
