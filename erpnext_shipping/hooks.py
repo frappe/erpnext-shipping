@@ -104,23 +104,11 @@ doctype_js = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"erpnext_shipping.tasks.all"
-# 	],
-# 	"daily": [
-# 		"erpnext_shipping.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"erpnext_shipping.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"erpnext_shipping.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"erpnext_shipping.tasks.monthly"
-# 	]
-# }
+scheduler_events = {
+	"daily": [
+		"erpnext_shipping.utils.update_tracking_info_daily"
+	]
+}
 
 # Testing
 # -------

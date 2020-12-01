@@ -18,8 +18,13 @@ frappe.ui.form.on('Shipment', {
 				}, __('Tools'));
 
 				frm.add_custom_button(__('Track Status'), function() {
-					const urls = frm.doc.tracking_url.split(', ');
-					urls.forEach(url => window.open(url));
+					if (frm.doc.tracking_url) {
+						const urls = frm.doc.tracking_url.split(', ');
+						urls.forEach(url => window.open(url));
+					} else {
+						let msg = __("Please complete Shipment (ID: {0}) on {1} and Update Tracking.", [frm.doc.shipment_id, frm.doc.service_provider]);
+						frappe.msgprint({message: msg, title: __("Incomplete Shipment")});
+					}
 				}, __('View'));
 			}
 		}
@@ -44,11 +49,11 @@ frappe.ui.form.on('Shipment', {
 					value_of_goods: frm.doc.value_of_goods
 				},
 				callback: function(r) {
-					if (r.message) {
+					if (r.message && r.message.length) {
 						select_from_available_services(frm, r.message);
 					}
 					else {
-						frappe.throw(__("No Shipment Services available"));
+						frappe.msgprint({message:__("No Shipment Services available"), title:__("Note")});
 					}
 				}
 			});
@@ -115,23 +120,28 @@ frappe.ui.form.on('Shipment', {
 
 function select_from_available_services(frm, available_services) {
 	var headers = [ __("Service Provider"), __("Carrier"), __("Carrier’s Service"), __("Price"), "" ];
-	cur_frm.render_available_services = function(d, headers, data){
-		const arranged_data = data.reduce((prev, curr) => {
-			if (curr.is_preferred) {
-				prev.preferred_services.push(curr);
-			} else {
-				prev.other_services.push(curr);
-			}
-			return prev;
-		}, { preferred_services: [], other_services: [] });
-		d.fields_dict.available_services.$wrapper.html(
-			frappe.render_template('shipment_service_selector',
-				{'header_columns': headers, 'data': arranged_data}
-			)
-		);
+
+	const arranged_services = available_services.reduce((prev, curr) => {
+		if (curr.is_preferred) {
+			prev.preferred_services.push(curr);
+		} else {
+			prev.other_services.push(curr);
+		}
+		return prev;
+	}, { preferred_services: [], other_services: [] });
+
+	frm.render_available_services = function(dialog, headers, arranged_services){
+		frappe.require("assets/js/shipment.min.js", function() {
+			dialog.fields_dict.available_services.$wrapper.html(
+				frappe.render_template('shipment_service_selector',
+					{'header_columns': headers, 'data': arranged_services}
+				)
+			);
+		});
 	};
-	const d = new frappe.ui.Dialog({
-		title: __("Select Shipment Service to create Shipment"),
+
+	const dialog = new frappe.ui.Dialog({
+		title: __("Select Service to Create Shipment"),
 		fields: [
 			{
 				fieldtype:'HTML',
@@ -140,24 +150,22 @@ function select_from_available_services(frm, available_services) {
 			}
 		]
 	});
-	cur_frm.render_available_services(d, headers, available_services);
-	let shipment_notific_email = [];
-	let tracking_notific_email = [];
-	(frm.doc.shipment_notification_subscription || []).forEach((d) => {
-		if (!d.unsubscribed) {
-			shipment_notific_email.push(d.email);
-		}
-	});
-	(frm.doc.shipment_status_update_subscription || []).forEach((d) => {
-		if (!d.unsubscribed) {
-			tracking_notific_email.push(d.email);
-		}
-	});
+
 	let delivery_notes = [];
 	(frm.doc.shipment_delivery_note || []).forEach((d) => {
 		delivery_notes.push(d.delivery_note);
 	});
-	cur_frm.select_row = function(service_data){
+
+	frm.render_available_services(dialog, headers, arranged_services);
+
+	dialog.$body.on('click', '.btn', function() {
+		let service_type = $(this).attr("data-type");
+		let service_index = cint($(this).attr("id").split("-")[2]);
+		let service_data = arranged_services[service_type][service_index];
+		frm.select_row(service_data);
+	});
+
+	frm.select_row = function(service_data){
 		frappe.call({
 			method: "erpnext_shipping.erpnext_shipping.utils.create_shipment",
 			freeze: true,
@@ -175,19 +183,21 @@ function select_from_available_services(frm, available_services) {
 				delivery_contact_name: frm.doc.delivery_contact_name,
 				value_of_goods: frm.doc.value_of_goods,
 				service_data: service_data,
-				shipment_notific_email: shipment_notific_email,
-				tracking_notific_email: tracking_notific_email,
 				delivery_notes: delivery_notes
 			},
 			callback: function(r) {
 				if (!r.exc) {
 					frm.reload_doc();
-					frappe.msgprint(__("Shipment created with {0}, ID is {1}", [r.message.service_provider, r.message.shipment_id]));
+					frappe.msgprint({
+							message: __("Shipment {1} has been created with {0}.", [r.message.service_provider, r.message.shipment_id.bold()]),
+							title: __("Shipment Created"),
+							indicator: "green"
+						});
 					frm.events.update_tracking(frm, r.message.service_provider, r.message.shipment_id);
 				}
 			}
 		});
-		d.hide();
+		dialog.hide();
 	};
-	d.show();
+	dialog.show();
 }

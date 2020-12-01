@@ -1,25 +1,27 @@
 {% if (data.preferred_services.length || data.other_services.length) { %}
-	<div style="overflow-x:scroll; height: 550px;">
+	<div style="overflow-x:scroll;">
 		<h5>{{ __("Preferred Services") }}</h5>
 		{% if (data.preferred_services.length) { %}
 			<table class="table table-bordered table-hover">
 				<thead class="grid-heading-row">
-					<tr style="text-align: center">
+					<tr>
 						{% for (var i = 0; i < header_columns.length; i++) { %}
-							<th style="text-align: center">{{ header_columns[i] }}</th>
+							<th style="padding-left: 12px;">{{ header_columns[i] }}</th>
 						{% } %}
 					</tr>
 				</thead>
 				<tbody>
 					{% for (var i = 0; i < data.preferred_services.length; i++) { %}
-						<tr style="text-align: center" id="data-list-{{i}}">
-							<td style="width:20%">{{ data.preferred_services[i].service_provider }}</td>
-							<td style="width:20%">{{ data.preferred_services[i].carrier }}</td>
-							<td style="width:40%">{{ data.preferred_services[i].service_name }}</td>
-							<td style="width:10%">{{ format_currency(data.preferred_services[i].total_price, 'EUR', 2) }}</td>
-							<td style="width:10%">
-								<button id="data-list-{{i}}" onclick='cur_frm.select_row({{JSON.stringify(data.preferred_services[i])}})' type="button" class="btn btn-primary">
-									<span class="glyphicon glyphicon-ok"></span>
+						<tr id="data-preferred-{{i}}">
+							<td class="service-info" style="width:20%;">{{ data.preferred_services[i].service_provider }}</td>
+							<td class="service-info" style="width:20%;">{{ data.preferred_services[i].carrier }}</td>
+							<td class="service-info" style="width:40%;">{{ data.preferred_services[i].service_name }}</td>
+							<td class="service-info" style="width:20%;">{{ format_currency(data.preferred_services[i].total_price, "EUR", 2) }}</td>
+							<td style="width:10%;">
+								<button
+									data-type="preferred_services"
+									id="data-preferred-{{i}}" type="button" class="btn">
+									<i class="fas fa-shipping-fast ship"></i>
 								</button>
 							</td>
 						</tr>
@@ -27,28 +29,34 @@
 				</tbody>
 			</table>
 		{% } else { %}
-			<div><strong class="text-muted">{{ __("No Preferred Services Available") }}</strong></div>
+			<div style="text-align: center; padding: 10px;">
+				<span class="text-muted">
+					{{ __("No Preferred Services Available") }}
+				</span>
+			</div>
 		{% } %}
 		<h5>{{ __("Other Services") }}</h5>
 		{% if (data.other_services.length) { %}
 			<table class="table table-bordered table-hover">
 				<thead class="grid-heading-row">
-					<tr style="text-align: center">
+					<tr>
 						{% for (var i = 0; i < header_columns.length; i++) { %}
-							<th style="text-align: center" >{{ header_columns[i] }}</th>
+							<th style="padding-left: 12px;" >{{ header_columns[i] }}</th>
 						{% } %}
 					</tr>
 				</thead>
 				<tbody>
 					{% for (var i = 0; i < data.other_services.length; i++) { %}
-						<tr style="text-align: center" id="data-list-{{i}}">
-							<td style="width:20%">{{ data.other_services[i].service_provider }}</td>
-							<td style="width:20%">{{ data.other_services[i].carrier }}</td>
-							<td style="width:40%">{{ data.other_services[i].service_name }}</td>
-							<td style="width:10%">{{ format_currency(data.other_services[i].total_price, 'EUR', 2) }}</td>
-							<td style="width:10%">
-								<button id="data-list-{{i}}" onclick='cur_frm.select_row({{JSON.stringify(data.other_services[i])}})' type="button" class="btn btn-primary">
-									<span class="glyphicon glyphicon-ok"></span>
+						<tr id="data-other-{{i}}">
+							<td class="service-info" style="width:20%;">{{ data.other_services[i].service_provider }}</td>
+							<td class="service-info" style="width:20%;">{{ data.other_services[i].carrier }}</td>
+							<td class="service-info" style="width:40%;">{{ data.other_services[i].service_name }}</td>
+							<td class="service-info" style="width:20%;">{{ format_currency(data.other_services[i].total_price, "EUR", 2) }}</td>
+							<td style="width:10%;">
+								<button
+									data-type="other_services"
+									id="data-other-{{i}}" type="button" class="btn">
+									<i class="fas fa-shipping-fast ship"></i>
 								</button>
 							</td>
 						</tr>
@@ -56,19 +64,34 @@
 				</tbody>
 			</table>
 		{% } else { %}
-			<div><strong class="text-muted">{{ __("No Services Available") }}</strong></div>
+		<div style="text-align: center; padding: 10px;">
+			<span class="text-muted">
+				{{ __("No Services Available") }}
+			</span>
+		</div>
 		{% } %}
 	</div>
 {% } else { %}
-	<div><strong class="text-muted">{{ __("No Services Available") }}</strong></div>
+	<div style="text-align: center; padding: 10px;">
+		<span class="text-muted">
+			{{ __("No Services Available") }}
+		</span>
+	</div>
 {% } %}
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
 <style type="text/css" media="screen">
 .modal-dialog {
 	width: 750px;
 }
-
-.table > tbody > tr > td, .table > tfoot > tr > td {
-	padding: 4px;
+.service-info {
+	vertical-align: middle !important;
+	padding-left: 12px !important;
+}
+.btn:hover {
+	background-color: #dedede;
+}
+.ship {
+	font-size: 16px;
 }
 </style>

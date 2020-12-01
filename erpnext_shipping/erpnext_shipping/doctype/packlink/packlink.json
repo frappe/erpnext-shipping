@@ -17,14 +17,14 @@
   },
   {
    "fieldname": "api_key",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "API Key",
    "read_only_depends_on": "eval:doc.enabled == 0"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-11-09 19:31:21.998129",
+ "modified": "2020-12-01 01:21:57.039347",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Packlink",

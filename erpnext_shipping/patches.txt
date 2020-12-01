@@ -1,0 +1,1 @@
+erpnext_shipping.erpnext_shipping.patches.create_custom_delivery_note_fields
