@@ -9,28 +9,27 @@ import json
 import re
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
+from erpnext_shipping.erpnext_shipping.utils import show_error_alert
 
 LETMESHIP_PROVIDER = 'LetMeShip'
 
-class LetMeShip(Document):
-	pass
+class LetMeShip(Document): pass
 
 class LetMeShipUtils():
-	def get_settings_data(self):
-		api_id, api_password, enabled = frappe.db.get_value('LetMeShip', 'LetMeShip',
-			['enabled', 'api_password', 'api_id'])
-		if not enabled:
+	def __init__(self):
+		self.api_password = get_decrypted_password('LetMeShip', 'LetMeShip', 'api_password', raise_exception=False)
+		self.api_id, self.enabled = frappe.db.get_value('LetMeShip', 'LetMeShip', ['api_id', 'enabled'])
+
+		if not self.enabled:
 			link = frappe.utils.get_link_to_form('LetMeShip', 'LetMeShip', frappe.bold('LetMeShip Settings'))
 			frappe.throw(_('Please enable LetMeShip Integration in {0}'.format(link)), title=_('Mandatory'))
-
-		return api_id, api_password, enabled
 
 	def get_available_services(self, delivery_to_type, pickup_address,
 		delivery_address, shipment_parcel, description_of_content, pickup_date,
 		value_of_goods, pickup_contact=None, delivery_contact=None):
 		# Retrieve rates at LetMeShip from specification stated.
-		api_id, api_password, enabled = self.get_settings_data()
-		if not enabled or not api_id or not api_password:
+		if not self.enabled or not self.api_id or not self.api_password:
 			return []
 
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
@@ -58,7 +57,7 @@ class LetMeShipUtils():
 			available_services = []
 			response_data = requests.post(
 				url=url,
-				auth=(api_id, api_password),
+				auth=(self.api_id, self.api_password),
 				headers=headers,
 				data=json.dumps(payload)
 			)
@@ -73,15 +72,14 @@ class LetMeShipUtils():
 				frappe.throw(_('An Error occurred while fetching LetMeShip prices: {0}')
 					.format(response_data['message']))
 		except Exception:
-			self.show_error_alert("fetching LetMeShip prices")
+			show_error_alert("fetching LetMeShip prices")
 
 		return []
 
 	def create_shipment(self, pickup_address, delivery_address, shipment_parcel, description_of_content,
 		pickup_date, value_of_goods, service_info, pickup_contact=None, delivery_contact=None):
 		# Create a transaction at LetMeShip
-		api_id, api_password, enabled = self.get_settings_data()
-		if not enabled or not api_id or not api_password:
+		if not self.enabled or not self.api_id or not self.api_password:
 			return []
 
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
@@ -108,7 +106,7 @@ class LetMeShipUtils():
 		try:
 			response_data = requests.post(
 				url=url,
-				auth=(api_id, api_password),
+				auth=(self.api_id, self.api_password),
 				headers=headers,
 				data=json.dumps(payload)
 			)
@@ -117,7 +115,7 @@ class LetMeShipUtils():
 				shipment_amount = response_data['service']['priceInfo']['totalPrice']
 				awb_number = ''
 				url = 'https://api.letmeship.com/v1/shipments/{id}'.format(id=response_data['shipmentId'])
-				tracking_response = requests.get(url, auth=(api_id, api_password),headers=headers)
+				tracking_response = requests.get(url, auth=(self.api_id, self.api_password),headers=headers)
 				tracking_response_data = json.loads(tracking_response.text)
 				if 'trackingData' in tracking_response_data:
 					for parcel in tracking_response_data['trackingData']['parcelList']:
@@ -135,11 +133,10 @@ class LetMeShipUtils():
 				frappe.throw(_('An Error occurred while creating Shipment: {0}')
 					.format(response_data['message']))
 		except Exception:
-			self.show_error_alert("creating Shipment")
+			show_error_alert("creating LetMeShip Shipment")
 
 	def get_label(self, shipment_id):
 		# Retrieve shipment label from LetMeShip
-		api_id, api_password, enabled = self.get_settings_data()
 		try:
 			headers = {
 				'Content-Type': 'application/json',
@@ -149,7 +146,7 @@ class LetMeShipUtils():
 			url = 'https://api.letmeship.com/v1/shipments/{id}/documents?types=LABEL'.format(id=shipment_id)
 			shipment_label_response = requests.get(
 				url,
-				auth=(api_id, api_password),
+				auth=(self.api_id, self.api_password),
 				headers=headers
 			)
 			shipment_label_response_data = json.loads(shipment_label_response.text)
@@ -161,12 +158,11 @@ class LetMeShipUtils():
 				frappe.throw(_('Error occurred while printing Shipment: {0}')
 					.format(shipment_label_response_data['message']))
 		except Exception:
-			self.show_error_alert("printing Shipment")
+			show_error_alert("printing LetMeShip Label")
 
 	def get_tracking_data(self, shipment_id):
 		from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
 		# return letmeship tracking data
-		api_id, api_password, enabled = self.get_settings_data()
 		headers = {
 			'Content-Type': 'application/json',
 			'Accept': 'application/json',
@@ -176,7 +172,7 @@ class LetMeShipUtils():
 			url = 'https://api.letmeship.com/v1/tracking?shipmentid={id}'.format(id=shipment_id)
 			tracking_data_response = requests.get(
 				url,
-				auth=(api_id, api_password),
+				auth=(self.api_id, self.api_password),
 				headers=headers
 			)
 			tracking_data = json.loads(tracking_data_response.text)
@@ -202,7 +198,7 @@ class LetMeShipUtils():
 				frappe.throw(_('Error occurred while updating Shipment: {0}')
 					.format(tracking_data['message']))
 		except Exception:
-			self.show_error_alert("updating Shipment")
+			show_error_alert("updating LetMeShip Shipment")
 
 	def generate_payload(self, pickup_address, pickup_contact, delivery_address, delivery_contact,
 		description_of_content, value_of_goods, parcel_list, pickup_date, service_info=None):
@@ -328,8 +324,3 @@ class LetMeShipUtils():
 			},
 			'email': contact.email
 		}
-
-	def show_error_alert(self, action):
-		log = frappe.log_error(frappe.get_traceback())
-		link_to_log = frappe.utils.get_link_to_form("Error Log", log.name, "See what happened.")
-		frappe.msgprint(_('An Error occurred while {0}. {1}').format(action, link_to_log), indicator='orange', alert=True)

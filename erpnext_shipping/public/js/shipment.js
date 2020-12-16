@@ -33,7 +33,7 @@ frappe.ui.form.on('Shipment', {
 	fetch_shipping_rates: function(frm) {
 		if (!frm.doc.shipment_id) {
 			frappe.call({
-				method: "erpnext_shipping.erpnext_shipping.utils.fetch_shipping_rates",
+				method: "erpnext_shipping.erpnext_shipping.shipping.fetch_shipping_rates",
 				freeze: true,
 				freeze_message: __("Fetching Shipping Rates"),
 				args: {
@@ -65,7 +65,7 @@ frappe.ui.form.on('Shipment', {
 
 	print_shipping_label: function(frm) {
 		frappe.call({
-			method: "erpnext_shipping.erpnext_shipping.utils.print_shipping_label",
+			method: "erpnext_shipping.erpnext_shipping.shipping.print_shipping_label",
 			freeze: true,
 			freeze_message: __("Printing Shipping Label"),
 			args: {
@@ -100,7 +100,7 @@ frappe.ui.form.on('Shipment', {
 			delivery_notes.push(d.delivery_note);
 		});
 		frappe.call({
-			method: "erpnext_shipping.erpnext_shipping.utils.update_tracking",
+			method: "erpnext_shipping.erpnext_shipping.shipping.update_tracking",
 			freeze: true,
 			freeze_message: __("Updating Tracking"),
 			args: {
@@ -119,7 +119,7 @@ frappe.ui.form.on('Shipment', {
 });
 
 function select_from_available_services(frm, available_services) {
-	var headers = [ __("Service Provider"), __("Carrier"), __("Carrier’s Service"), __("Price"), "" ];
+	var headers = [ __("Service Provider"), __("Parcel Service"), __("Parcel Service Type"), __("Price"), "" ];
 
 	const arranged_services = available_services.reduce((prev, curr) => {
 		if (curr.is_preferred) {
@@ -167,7 +167,7 @@ function select_from_available_services(frm, available_services) {
 
 	frm.select_row = function(service_data){
 		frappe.call({
-			method: "erpnext_shipping.erpnext_shipping.utils.create_shipment",
+			method: "erpnext_shipping.erpnext_shipping.shipping.create_shipment",
 			freeze: true,
 			freeze_message: __("Creating Shipment"),
 			args: {

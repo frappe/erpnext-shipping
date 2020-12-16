@@ -8,40 +8,38 @@ import frappe
 import requests
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
+from erpnext_shipping.erpnext_shipping.utils import show_error_alert
 
 PACKLINK_PROVIDER = 'Packlink'
 
-class Packlink(Document):
-	pass
+class Packlink(Document): pass
 
 class PackLinkUtils():
-	def get_settings_data(self):
-		api_key, enabled = frappe.db.get_value('Packlink', 'Packlink',
-			['api_key', 'enabled'])
-		if not enabled:
+	def __init__(self):
+		self.api_key = get_decrypted_password('Packlink', 'Packlink', 'api_key', raise_exception=False)
+		self.enabled = frappe.db.get_single_value('Packlink', 'enabled')
+
+		if not self.enabled:
 			link = frappe.utils.get_link_to_form('Packlink', 'Packlink', frappe.bold('Packlink Settings'))
 			frappe.throw(_('Please enable Packlink Integration in {0}'.format(link)), title=_('Mandatory'))
 
-		return api_key, enabled
-
 	def get_available_services(self, pickup_address, delivery_address, shipment_parcel, pickup_date):
 		# Retrieve rates at PackLink from specification stated.
-		api_key, enabled = self.get_settings_data()
 		parcel_list = self.get_parcel_list(json.loads(shipment_parcel))
 		shipment_parcel_params = self.get_formatted_parcel_params(parcel_list)
 		url = self.get_formatted_request_url(pickup_address, delivery_address, shipment_parcel_params)
 
-		if not api_key or not enabled:
+		if not self.api_key or not self.enabled:
 			return []
 
 		try:
-			responses = requests.get(url, headers={'Authorization': api_key})
+			responses = requests.get(url, headers={'Authorization': self.api_key})
 			responses_dict = json.loads(responses.text)
-
 			# If an error occured on the api. Show the error message
 			if 'messages' in responses_dict:
-				error = str(responses_dict['messages'][0]['message'])
-				frappe.msgprint(_('Packlink: {0}').format(error), indicator='orange', alert=True)
+				error_message = str(responses_dict['messages'][0]['message'])
+				frappe.throw(error_message, title=_("PackLink"))
 
 			available_services = []
 			for response in responses_dict:
@@ -50,9 +48,13 @@ class PackLinkUtils():
 					available_service = self.get_service_dict(response)
 					available_services.append(available_service)
 
+			if responses_dict and not available_services:
+				# got a response but no service available for given date
+				frappe.throw(_("No Services available for {0}").format(pickup_date), title=_("PackLink"))
+
 			return available_services
 		except Exception:
-			self.show_error_alert("fetching services")
+			show_error_alert("fetching Packlink prices")
 
 		return []
 
@@ -60,7 +62,6 @@ class PackLinkUtils():
 		description_of_content, pickup_date, value_of_goods, pickup_contact,
 		delivery_contact, service_info):
 		# Create a transaction at PackLink
-		api_key, enabled = self.get_settings_data()
 		data = {
 			'additional_data': {
 				'postal_zone_id_from': '',
@@ -83,7 +84,7 @@ class PackLinkUtils():
 
 		url = 'https://api.packlink.com/v1/shipments'
 		headers = {
-			'Authorization': api_key,
+			'Authorization': self.api_key,
 			'Content-Type': 'application/json'
 		}
 		try:
@@ -99,13 +100,12 @@ class PackLinkUtils():
 					'awb_number': '',
 				}
 		except Exception:
-			self.show_error_alert("creating Shipment")
+			show_error_alert("creating Packlink Shipment")
 
 	def get_label(self, shipment_id):
 		# Retrieve shipment label from PackLink
-		api_key, enabled = self.get_settings_data()
 		headers = {
-			'Authorization': api_key,
+			'Authorization': self.api_key,
 			'Content-Type': 'application/json'
 		}
 		try:
@@ -121,15 +121,15 @@ class PackLinkUtils():
 					.format(shipment_id)
 				frappe.msgprint(msg=_(message), title=_("Label Not Found"))
 		except Exception:
-			self.show_error_alert("fetching Label")
+			show_error_alert("printing Packlink Label")
 		return []
 
 	def get_tracking_data(self, shipment_id):
 		# Get Packlink Tracking Info
 		from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
-		api_key, enabled = self.get_settings_data()
+
 		headers = {
-			'Authorization': api_key,
+			'Authorization': self.api_key,
 			'Content-Type': 'application/json'
 		}
 		try:
@@ -156,7 +156,7 @@ class PackLinkUtils():
 					'tracking_url': tracking_url
 				}
 		except Exception:
-			self.show_error_alert("updating Shipment")
+			show_error_alert("updating Packlink Shipment")
 		return []
 
 	def get_formatted_request_url(self, pickup_address, delivery_address, shipment_parcel_params):
@@ -227,8 +227,3 @@ class PackLinkUtils():
 
 	def parse_pickup_date(self, pickup_date):
 		return pickup_date.replace('-', '/')
-
-	def show_error_alert(self, action):
-		log = frappe.log_error(frappe.get_traceback())
-		link_to_log = frappe.utils.get_link_to_form("Error Log", log.name, "See what happened.")
-		frappe.msgprint(_('An Error occurred while {0}. {1}').format(action, link_to_log), indicator='orange', alert=True)

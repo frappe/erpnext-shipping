@@ -7,7 +7,8 @@
  "field_order": [
   "enabled",
   "api_id",
-  "api_password"
+  "api_password",
+  "information"
  ],
  "fields": [
   {
@@ -27,11 +28,16 @@
    "fieldtype": "Password",
    "label": "API Password",
    "read_only_depends_on": "eval:doc.enabled == 0"
+  },
+  {
+   "fieldname": "information",
+   "fieldtype": "HTML",
+   "options": "<div><span class=\"text-medium text-muted\">For steps to generate the API ID, click <a href=\"https://www.letmeship.com/en-at/connect-the-shipping-interface/\" target=\"_blank\">here</a></span></div>"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-11-09 19:26:49.248289",
+ "modified": "2020-12-16 15:36:48.424827",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "LetMeShip",

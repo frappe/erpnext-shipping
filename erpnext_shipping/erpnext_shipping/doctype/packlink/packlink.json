@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "api_key"
+  "api_key",
+  "information"
  ],
  "fields": [
   {
@@ -20,11 +21,16 @@
    "fieldtype": "Password",
    "label": "API Key",
    "read_only_depends_on": "eval:doc.enabled == 0"
+  },
+  {
+   "fieldname": "information",
+   "fieldtype": "HTML",
+   "options": "<div><span class=\"text-medium text-muted\">For steps to generate the API key, click <a href=\"https://support-pro.packlink.com/hc/en-gb/articles/213431749-How-to-generate-an-API-key-on-PRO\" target=\"_blank\">here</a></span></div>"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-12-01 01:21:57.039347",
+ "modified": "2020-12-16 15:30:27.436717",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Packlink",
