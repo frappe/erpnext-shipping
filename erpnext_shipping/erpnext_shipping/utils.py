@@ -16,7 +16,10 @@ def get_tracking_url(carrier, tracking_number):
 def get_address(address_name):
 	fields = ['address_title', 'address_line1', 'address_line2', 'city', 'pincode', 'country']
 	address = frappe.db.get_value('Address', address_name, fields, as_dict=1)
-	address.country_code = frappe.db.get_value('Country', address.country, 'code').upper()
+	if address.country_code:
+		address.country_code = frappe.db.get_value('Country', address.country, 'code').upper()
+	else:
+		frappe.throw("Please add country code in <b>{0}</b>.".format(address.country))
 
 	if not address.pincode or address.pincode == '':
 		frappe.throw(_("Postal Code is mandatory to continue. </br> \
