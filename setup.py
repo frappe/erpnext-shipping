@@ -8,11 +8,11 @@ with open('requirements.txt') as f:
 from erpnext_shipstation import __version__ as version
 
 setup(
-	name='erpnext_shipping',
+	name='erpnext_shipstation',
 	version=version,
-	description='A Shipping Integration for ERPNext',
+	description='Shipstation Integration for ERPNext',
 	author='Frappe',
-	author_email='developers@frappe.io',
+	author_email='didals0521@gmail.com',
 	packages=find_packages(),
 	zip_safe=False,
 	include_package_data=True,
