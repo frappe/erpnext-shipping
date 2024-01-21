@@ -2,10 +2,10 @@
 from __future__ import unicode_literals
 from . import __version__ as app_version
 
-app_name = "erpnext_shipping"
-app_title = "ERPNext Shipping"
+app_name = "erpnext_shipstation"
+app_title = "ERPNext ShipStation"
 app_publisher = "Frappe"
-app_description = "A Shipping Integration fir ERPNext"
+app_description = "A Shipping Integration for ERPNext"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
 app_email = "developers@frappe.io"

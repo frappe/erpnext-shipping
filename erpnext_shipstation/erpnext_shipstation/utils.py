@@ -39,7 +39,7 @@ def get_contact(contact_name):
 	return contact
 
 def match_parcel_service_type_carrier(shipment_prices, reference):
-	from erpnext_shipping.erpnext_shipping.doctype.parcel_service_type.parcel_service_type import match_parcel_service_type_alias
+	from erpnext_shipstation.erpnext_shipstation.doctype.parcel_service_type.parcel_service_type import match_parcel_service_type_alias
 
 	for idx, prices in enumerate(shipment_prices):
 		service_name = match_parcel_service_type_alias(prices.get(reference[0]), prices.get(reference[1]))

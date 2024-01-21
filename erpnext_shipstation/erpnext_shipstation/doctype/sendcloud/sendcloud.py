@@ -10,7 +10,7 @@ from frappe import _
 from frappe.utils import flt
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
-from erpnext_shipping.erpnext_shipping.utils import show_error_alert
+from erpnext_shipstation.erpnext_shipstation.utils import show_error_alert
 
 SENDCLOUD_PROVIDER = 'SendCloud'
 

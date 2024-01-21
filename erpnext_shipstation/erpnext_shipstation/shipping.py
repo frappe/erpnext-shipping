@@ -8,10 +8,10 @@ from six import string_types
 from frappe import _
 from frappe.utils import flt
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
-from erpnext_shipping.erpnext_shipping.utils import get_address, get_contact, match_parcel_service_type_carrier
-from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, LetMeShipUtils
-from erpnext_shipping.erpnext_shipping.doctype.packlink.packlink import PACKLINK_PROVIDER, PackLinkUtils
-from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
+from erpnext_shipstation.erpnext_shipstation.utils import get_address, get_contact, match_parcel_service_type_carrier
+from erpnext_shipstation.erpnext_shipstation.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, LetMeShipUtils
+from erpnext_shipstation.erpnext_shipstation.doctype.packlink.packlink import PACKLINK_PROVIDER, PackLinkUtils
+from erpnext_shipstation.erpnext_shipstation.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
 
 @frappe.whitelist()
 def fetch_shipping_rates(pickup_from_type, delivery_to_type, pickup_address_name, delivery_address_name,

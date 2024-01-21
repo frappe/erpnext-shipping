@@ -9,7 +9,7 @@ import requests
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
-from erpnext_shipping.erpnext_shipping.utils import show_error_alert
+from erpnext_shipstation.erpnext_shipstation.utils import show_error_alert
 
 PACKLINK_PROVIDER = 'Packlink'
 
@@ -126,7 +126,7 @@ class PackLinkUtils():
 
 	def get_tracking_data(self, shipment_id):
 		# Get Packlink Tracking Info
-		from erpnext_shipping.erpnext_shipping.utils import get_tracking_url
+		from erpnext_shipstation.erpnext_shipstation.utils import get_tracking_url
 
 		headers = {
 			'Authorization': self.api_key,
