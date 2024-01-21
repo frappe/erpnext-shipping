@@ -4,15 +4,15 @@ include *.json
 include *.md
 include *.py
 include *.txt
-recursive-include erpnext_shipping *.css
-recursive-include erpnext_shipping *.csv
-recursive-include erpnext_shipping *.html
-recursive-include erpnext_shipping *.ico
-recursive-include erpnext_shipping *.js
-recursive-include erpnext_shipping *.json
-recursive-include erpnext_shipping *.md
-recursive-include erpnext_shipping *.png
-recursive-include erpnext_shipping *.py
-recursive-include erpnext_shipping *.svg
-recursive-include erpnext_shipping *.txt
-recursive-exclude erpnext_shipping *.pyc
+recursive-include erpnext_shipstation *.css
+recursive-include erpnext_shipstation *.csv
+recursive-include erpnext_shipstation *.html
+recursive-include erpnext_shipstation *.ico
+recursive-include erpnext_shipstation *.js
+recursive-include erpnext_shipstation *.json
+recursive-include erpnext_shipstation *.md
+recursive-include erpnext_shipstation *.png
+recursive-include erpnext_shipstation *.py
+recursive-include erpnext_shipstation *.svg
+recursive-include erpnext_shipstation *.txt
+recursive-exclude erpnext_shipstation *.pyc
