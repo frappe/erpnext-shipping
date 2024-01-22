@@ -12,6 +12,7 @@ from erpnext_shipstation.erpnext_shipstation.utils import get_address, get_conta
 from erpnext_shipstation.erpnext_shipstation.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, LetMeShipUtils
 from erpnext_shipstation.erpnext_shipstation.doctype.packlink.packlink import PACKLINK_PROVIDER, PackLinkUtils
 from erpnext_shipstation.erpnext_shipstation.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
+from erpnext_shipstation.erpnext_shipstation.doctype.shipstation.shipstation import SHIPSTATION_PROVIDER, ShipStationUtils
 
 @frappe.whitelist()
 def fetch_shipping_rates(pickup_from_type, delivery_to_type, pickup_address_name, delivery_address_name,
@@ -22,6 +23,7 @@ def fetch_shipping_rates(pickup_from_type, delivery_to_type, pickup_address_name
 	letmeship_enabled = frappe.db.get_single_value('LetMeShip','enabled')
 	packlink_enabled = frappe.db.get_single_value('Packlink','enabled')
 	sendcloud_enabled = frappe.db.get_single_value('SendCloud','enabled')
+	shipstation_enabled = frappe.db.get_single_value('ShipStation','enabled')
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 
@@ -71,6 +73,33 @@ def fetch_shipping_rates(pickup_from_type, delivery_to_type, pickup_address_name
 			shipment_parcel=shipment_parcel
 		) or []
 		shipment_prices = shipment_prices + sendcloud_prices[:4] # remove after fixing scroll issue
+	if shipstation_enabled:
+		pickup_contact = None
+		delivery_contact = None
+		if pickup_from_type != 'Company':
+			pickup_contact = get_contact(pickup_contact_name)
+		else:
+			pickup_contact = get_company_contact(user=pickup_contact_name)
+
+		if delivery_to_type != 'Company':
+			delivery_contact = get_contact(delivery_contact_name)
+		else:
+			delivery_contact = get_company_contact(user=pickup_contact_name)
+
+		shipstaion = ShipStationUtils()
+		shipstaion_prices = shipstaion.get_available_services(
+			delivery_to_type=delivery_to_type,
+			pickup_address=pickup_address,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			pickup_date=pickup_date,
+			value_of_goods=value_of_goods,
+			pickup_contact=pickup_contact,
+			delivery_contact=delivery_contact,
+		) or []
+		shipstaion_prices = match_parcel_service_type_carrier(shipstaion_prices, ['carrier', 'carrier_name'])
+		shipment_prices = shipment_prices + shipstaion_prices
 	shipment_prices = sorted(shipment_prices, key=lambda k:k['total_price'])
 	return shipment_prices
 
@@ -134,6 +163,19 @@ def create_shipment(shipment, pickup_from_type, delivery_to_type, pickup_address
 			delivery_contact=delivery_contact,
 			service_info=service_info,
 		)
+	if service_info['service_provider'] == SHIPSTATION_PROVIDER:
+		shipstation = ShipStationUtils()
+		shipment_info = shipstation.create_shipment(
+			pickup_address=pickup_address,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			pickup_date=pickup_date,
+			value_of_goods=value_of_goods,
+			pickup_contact=pickup_contact,
+			delivery_contact=delivery_contact,
+			service_info=service_info
+		)
 
 	if shipment_info:
 		fields = ['service_provider', 'carrier', 'carrier_service', 'shipment_id', 'shipment_amount', 'awb_number']
@@ -157,6 +199,9 @@ def print_shipping_label(service_provider, shipment_id):
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		shipping_label = sendcloud.get_label(shipment_id)
+	elif service_provider == SHIPSTATION_PROVIDER:
+		shipstation = ShipStationUtils()
+		shipping_label = sendcloud.get_label(shipment_id)
 	return shipping_label
 
 @frappe.whitelist()
@@ -171,6 +216,9 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=[]):
 		tracking_data = packlink.get_tracking_data(shipment_id)
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
+		tracking_data = sendcloud.get_tracking_data(shipment_id)
+	elif service_provider == SHIPSTATION_PROVIDER:
+		shipstation = ShipStationUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
 
 	if tracking_data:
