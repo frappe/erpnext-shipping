@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "creation": "2024-01-20 10:55:19.669830",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "api_id",
+  "api_password",
+  "information"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "api_id",
+   "fieldtype": "Data",
+   "label": "API ID",
+   "read_only_depends_on": "eval:doc.enabled == 0"
+  },
+  {
+   "fieldname": "api_password",
+   "fieldtype": "Password",
+   "label": "API Password",
+   "read_only_depends_on": "eval:doc.enabled == 0"
+  },
+  {
+   "fieldname": "information",
+   "fieldtype": "HTML",
+   "options": "<div><span class=\"text-medium text-muted\">For steps to generate the API ID, click <a href=\"https://www.letmeship.com/en-at/connect-the-shipping-interface/\" target=\"_blank\">here</a></span></div>"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-01-20 15:36:48.424827",
+ "modified_by": "Administrator",
+ "module": "ERPNext ShipStation",
+ "name": "ShipStation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
