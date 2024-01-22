@@ -33,7 +33,7 @@ frappe.ui.form.on('Shipment', {
 	fetch_shipping_rates: function(frm) {
 		if (!frm.doc.shipment_id) {
 			frappe.call({
-				method: "erpnext_shipstation.erpnext_shipstation.shipping.fetch_shipping_rates",
+				method: "fetch_shipping.fetch_shipping.shipping.fetch_shipping_rates",
 				freeze: true,
 				freeze_message: __("Fetching Shipping Rates"),
 				args: {
