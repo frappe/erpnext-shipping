@@ -14,7 +14,7 @@ def get_tracking_url(carrier, tracking_number):
 	return tracking_url
 
 def get_address(address_name):
-	fields = ['address_title', 'address_line1', 'address_line2', 'city', 'pincode', 'country']
+	fields = ['address_title', 'address_line1', 'address_line2', 'city', 'pincode', 'country', 'state']
 	address = frappe.db.get_value('Address', address_name, fields, as_dict=1)
 	address.country_code = frappe.db.get_value('Country', address.country, 'code').upper()
 
