@@ -14,7 +14,7 @@ A Shipping Integration for ERPNext with various platforms. Platforms integrated 
 
 ## Installation
 
-> [!CAUTION]
+> [!IMPORTANT]
 > The `master` branch is only compatible with ERPNext v13 and below. For higher ERPNext versions, please use the appropriate branch (e.g. `version-14`).
 
 Install [on Frappe Cloud](https://frappecloud.com/marketplace/apps/shipping) or your own server:
