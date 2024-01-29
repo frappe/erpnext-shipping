@@ -13,18 +13,47 @@ def get_tracking_url(carrier, tracking_number):
 		tracking_url = frappe.render_template(url_reference, {'tracking_number': tracking_number})
 	return tracking_url
 
-def get_address(address_name):
-	fields = ['address_title', 'address_line1', 'address_line2', 'city', 'pincode', 'country']
-	address = frappe.db.get_value('Address', address_name, fields, as_dict=1)
-	address.country_code = frappe.db.get_value('Country', address.country, 'code').upper()
 
-	if not address.pincode or address.pincode == '':
-		frappe.throw(_("Postal Code is mandatory to continue. </br> \
-				Please set Postal Code for Address <a href='#Form/Address/{0}'>{1}</a>"
-			).format(address_name, address_name))
+def get_address(address_name):
+	address = frappe.db.get_value(
+		"Address",
+		address_name,
+		[
+			"address_title",
+			"address_line1",
+			"address_line2",
+			"city",
+			"pincode",
+			"country",
+		],
+		as_dict=1,
+	)
+	validate_address(address)
+
+	address.country = address.country.strip()
+	address.country_code = get_country_code(address.country)
 	address.pincode = address.pincode.replace(' ', '')
 	address.city = address.city.strip()
+
 	return address
+
+
+def validate_address(address):
+	if not address.country:
+		frappe.throw("Please add a valid country in Address {0}.".format(address.address_title))
+
+	if not address.pincode or address.pincode.strip() == "":
+		frappe.throw(
+			_("Please add a valid pincode in Address {0}.").format(address.address_title)
+		)
+
+
+def get_country_code(country_name):
+	country_code = frappe.db.get_value("Country", country_name, "code")
+	if not country_code:
+		frappe.throw(_("Country Code not found for {0}").format(country_name))
+	return country_code
+
 
 def get_contact(contact_name):
 	fields = ['first_name', 'last_name', 'email_id', 'phone', 'mobile_no', 'gender']
