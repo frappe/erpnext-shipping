@@ -12,6 +12,19 @@ A Shipping Integration for ERPNext with various platforms. Platforms integrated 
 - Templates for the parcel dimensions.
 - Shipment tracking.
 
+## Installation
+
+> [!CAUTION]
+> The `master` branch is only compatible with ERPNext v13 and below. For higher ERPNext versions, please use the appropriate branch (e.g. `version-14`).
+
+Install [on Frappe Cloud](https://frappecloud.com/marketplace/apps/shipping) or your own server:
+
+```bash
+cd ~/frappe-bench
+bench get-app https://github.com/frappe/erpnext-shipping.git --branch master
+bench --site $MY_SITE install-app erpnext_shipping
+```
+
 ## Setup
 For the compare shipping rates feature to work as expected, you need to generate an API key from your service provider. Service providers have their own specific doctypes similar to those from the `Integrations`. They can be enabled or disabled depending on your needs.
 
