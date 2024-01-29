@@ -61,7 +61,7 @@ doctype_js = {
 # ------------
 
 # before_install = "erpnext_shipping.install.before_install"
-# after_install = "erpnext_shipping.install.after_install"
+after_install = "erpnext_shipping.install.after_install"
 
 # Desk Notifications
 # ------------------
@@ -133,3 +133,75 @@ scheduler_events = {
 #
 # auto_cancel_exempted_doctypes = ["Auto Repeat"]
 
+shipping_custom_fields = {
+	"Delivery Note": [
+		{
+			"fieldname": "shipping_sec_break",
+			"label": "Shipping Details",
+			"fieldtype": "Section Break",
+			"collapsible": 1,
+			"insert_after": "sales_team"
+		},
+		{
+			"fieldname": "delivery_type",
+			"label": "Delivery Type",
+			"fieldtype": "Data",
+			"read_only": 1,
+			"translatable": 0,
+			"insert_after": "shipping_sec_break"
+		},
+		{
+			"fieldname": "parcel_service",
+			"label": "Parcel Service",
+			"fieldtype": "Link",
+			"options": "Parcel Service",
+			"read_only": 1,
+			"insert_after": "delivery_type"
+		},
+		{
+			"fieldname": "parcel_service_type",
+			"label": "Parcel Service Type",
+			"fieldtype": "Link",
+			"options": "Parcel Service Type",
+			"read_only": 1,
+			"insert_after": "parcel_service"
+		},
+		{
+			"fieldname": "shipping_col_break",
+			"fieldtype": "Column Break",
+			"insert_after": "parcel_service_type"
+		},
+		{
+			"fieldname": "tracking_number",
+			"label": "Tracking Number",
+			"fieldtype": "Data",
+			"read_only": 1,
+			"translatable": 0,
+			"insert_after": "shipping_col_break"
+		},
+		{
+			"fieldname": "tracking_url",
+			"label": "Tracking URL",
+			"fieldtype": "Data",
+			"read_only": 1,
+			"translatable": 0,
+			"insert_after": "tracking_number"
+		},
+		{
+			"fieldname": "tracking_status",
+			"label": "Tracking Status",
+			"fieldtype": "Data",
+			"read_only": 1,
+			"translatable": 0,
+			"insert_after": "tracking_url"
+		},
+		{
+			"fieldname": "tracking_status_info",
+			"label": "Tracking Status Information",
+			"fieldtype": "Data",
+			"read_only": 1,
+			"translatable": 0,
+			"insert_after": "tracking_status"
+		}
+	]
+}
