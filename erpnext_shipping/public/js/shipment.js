@@ -131,13 +131,11 @@ function select_from_available_services(frm, available_services) {
 	}, { preferred_services: [], other_services: [] });
 
 	frm.render_available_services = function(dialog, headers, arranged_services){
-		frappe.require("assets/js/shipment.min.js", function() {
-			dialog.fields_dict.available_services.$wrapper.html(
-				frappe.render_template('shipment_service_selector',
-					{'header_columns': headers, 'data': arranged_services}
-				)
-			);
-		});
+		dialog.fields_dict.available_services.$wrapper.html(
+			frappe.render_template('shipment_service_selector',
+				{'header_columns': headers, 'data': arranged_services}
+			)
+		);
 	};
 
 	const dialog = new frappe.ui.Dialog({

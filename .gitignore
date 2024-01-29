@@ -5,3 +5,4 @@ __pycache__
 *.swp
 tags
 erpnext_shipping/docs/current
+erpnext_shipping/public/dist
