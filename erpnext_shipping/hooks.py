@@ -106,7 +106,7 @@ doctype_js = {
 
 scheduler_events = {
 	"daily": [
-		"erpnext_shipping.utils.update_tracking_info_daily"
+		"erpnext_shipping.erpnext_shipping.utils.update_tracking_info_daily"
 	]
 }
 
