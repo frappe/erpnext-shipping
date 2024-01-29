@@ -129,16 +129,78 @@ function select_from_available_services(frm, available_services) {
 		}
 		return prev;
 	}, { preferred_services: [], other_services: [] });
+	
+	// frm.render_available_services = function(dialog, headers, arranged_services) {
+	// 	frappe.require('assets/erpnext_shipstation/js/shipment.js', function() {
+	// 		dialog.fields_dict.available_services.$wrapper.html(
+	// 			frappe.render_template('assets/erpnext_shipstation/js/shipment_service_selector', {
+	// 				'header_columns': headers,
+	// 				'data': arranged_services
+	// 			})
+	// 		);
+	// 	});
+	// };
 
-	frm.render_available_services = function(dialog, headers, arranged_services){
-		frappe.require("assets/js/shipment.min.js", function() {
-			dialog.fields_dict.available_services.$wrapper.html(
-				frappe.render_template('shipment_service_selector',
-					{'header_columns': headers, 'data': arranged_services}
-				)
-			);
+	frm.render_available_services = function(dialog, headers, arranged_services) {
+		frappe.require('assets/erpnext_shipstation/js/shipment.js', function() {
+			dialog.fields_dict.available_services.$wrapper.html(`
+			<div style="overflow-x:scroll;">
+				<h5>Preferred Services</h5>
+				<table class="table table-bordered table-hover">
+					<thead class="grid-heading-row">
+						<tr>
+							${headers.map(header => `<th style="padding-left: 12px;">${header}</th>`).join('')}
+						</tr>
+					</thead>
+					<tbody>
+						${arranged_services.preferred_services.map((service, i) => `
+						${console.log(service)}
+							<tr id="data-preferred-${i}">
+								<td class="service-info" style="width:20%;">${service.service_provider}</td>
+								<td class="service-info" style="width:20%;">${service.carrier}</td>
+								<td class="service-info" style="width:40%;">${service.carrier_name}</td>
+								<td class="service-info" style="width:20%;">${format_currency(service.total_price, "EUR", 2)}</td>
+								<td style="width:10%;vertical-align: middle;">
+									<button
+										data-type="preferred_services"
+										id="data-preferred-${i}" type="button" class="btn">
+										Select
+									</button>
+								</td>
+							</tr>
+						`).join('')}
+					</tbody>
+				</table>
+				<h5>Other Services</h5>
+				<table class="table table-bordered table-hover">
+					<thead class="grid-heading-row">
+						<tr>
+							${headers.map(header => `<th style="padding-left: 12px;">${header}</th>`).join('')}
+						</tr>
+					</thead>
+					<tbody>
+						${arranged_services.other_services.map((service, i) => `
+							<tr id="data-other-${i}">
+								<td class="service-info" style="width:20%;">${service.service_provider}</td>
+								<td class="service-info" style="width:20%;">${service.carrier}</td>
+								<td class="service-info" style="width:40%;">${service.service_name}</td>
+								<td class="service-info" style="width:20%;">${format_currency(service.total_price, "EUR", 2)}</td>
+								<td style="width:10%;vertical-align: middle;">
+									<button
+										data-type="other_services"
+										id="data-other-${i}" type="button" class="btn">
+										Select
+									</button>
+								</td>
+							</tr>
+						`).join('')}
+					</tbody>
+				</table>
+			</div>
+		`);
 		});
 	};
+	
 
 	const dialog = new frappe.ui.Dialog({
 		title: __("Select Service to Create Shipment"),

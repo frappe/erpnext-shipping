@@ -15,22 +15,22 @@ app_license = "MIT"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/erpnext_shipping/css/erpnext_shipping.css"
-# app_include_js = "/assets/erpnext_shipping/js/erpnext_shipping.js"
+app_include_css = "/assets/erpnext_shipstation/css/erpnext_shipstation.css"
+app_include_js = "/assets/erpnext_shipstation/js/erpnext_shipstation.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/erpnext_shipping/css/erpnext_shipping.css"
-# web_include_js = "/assets/erpnext_shipping/js/erpnext_shipping.js"
+web_include_css = "/assets/erpnext_shipstation/css/erpnext_shipstation.css"
+web_include_js = "/assets/erpnext_shipstation/js/erpnext_shipstation.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "erpnext_shipping/public/scss/website"
 
 # include js, css files in header of web form
-# webform_include_js = {"doctype": "public/js/doctype.js"}
-# webform_include_css = {"doctype": "public/css/doctype.css"}
+webform_include_js = {"doctype": "public/js/doctype.js"}
+webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
 doctype_js = {

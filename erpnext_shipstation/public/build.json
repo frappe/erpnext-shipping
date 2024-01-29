@@ -1,5 +1,11 @@
-{
+{	
 	"js/shipment.min.js": [
+		"public/js/shipment_service_selector.html"
+	],
+	"js/shipment.js": [
+		"public/js/shipment_service_selector.html"
+	],
+	"assets/erpnext_shipstation/js/shipment.js": [
 		"public/js/shipment_service_selector.html"
 	]
 }
