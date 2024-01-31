@@ -14,6 +14,8 @@ from erpnext_shipstation.erpnext_shipstation.utils import show_error_alert
 
 SHIPSTATION_PROVIDER = 'ShipStation'
 BASE_URL = 'https://ssapi.shipstation.com'
+CARRIER_CODE = 'stamps_com'
+
 class ShipStation(Document): pass
 
 class ShipStationUtils():
@@ -25,111 +27,11 @@ class ShipStationUtils():
 			link = frappe.utils.get_link_to_form('ShipStation', 'ShipStation', frappe.bold('ShipStation Settings'))
 			frappe.throw(_('Please enable ShipStation Integration in {0}'.format(link)), title=_('Mandatory'))
 
-	def get_available_services2(self, delivery_to_type, pickup_address,
-		delivery_address, shipment_parcel, description_of_content, pickup_date,
-		value_of_goods, pickup_contact=None, delivery_contact=None):
-		# Retrieve rates at LetMeShip from specification stated.
-		if not self.enabled or not self.api_id or not self.api_password:
-			return []
-
 		self.set_shipstation_specific_fields(pickup_contact, delivery_contact)
 		pickup_address.address_title = self.trim_address(pickup_address)
 		delivery_address.address_title = self.trim_address(delivery_address)
 		parcel_list = self.get_parcel_list(json.loads(shipment_parcel), description_of_content)
 
-		url = BASE_URL+'/shipments/getrates'
-		headers = {
-			'Content-Type': 'application/json',
-			'Accept': 'application/json',
-			'Access-Control-Allow-Origin': 'string'
-		}
-		# payload = self.generate_payload(
-		# 	pickup_address=pickup_address,
-		# 	pickup_contact=pickup_contact,
-		# 	delivery_address=delivery_address,
-		# 	delivery_contact=delivery_contact,
-		# 	description_of_content=description_of_content,
-		# 	value_of_goods=value_of_goods,
-		# 	parcel_list=parcel_list,
-		# 	pickup_date=pickup_date
-		# )
-		carrierCode = 'stamps_com'
-		# payload = {
-		# 	"carrierCode": carrierCode,
-		# 	"serviceCode": None,
-		# 	"packageCode": None,
-		# 	"fromPostalCode": pickup_address.pincode,
-		# 	"toState": delivery_address.state,
-		# 	"toCountry": delivery_address.country,
-		# 	"toPostalCode": delivery_address.pincode,
-		# 	"toCity": delivery_address.city,
-		# 	"weight": {
-		# 		"value": value_of_goods,  # You may need to adjust this based on your specific use case
-		# 		"units": "ounces"
-		# 	},
-		# 	"dimensions": {
-		# 		"units": "inches",
-		# 		"length": parcel_list[0]['length'],  # Assuming the first parcel in the list
-		# 		"width": parcel_list[0]['width'],   # Assuming the first parcel in the list
-		# 		"height": parcel_list[0]['height']   # Assuming the first parcel in the list
-		# 	},
-		# 	"confirmation": "delivery",
-		# 	"residential": False
-		# }
-	
-		payload = {
-			"carrierCode": "stamps_com",
-			"serviceCode": None,
-			"packageCode": None,
-			"fromPostalCode": "78703",
-			"toState": "DC",
-			"toCountry": "US",
-			"toPostalCode": "20500",
-			"toCity": "Washington",
-			"weight": {
-				"value": 3,
-				"units": "ounces"
-			},
-			"dimensions": {
-				"units": "inches",
-				"length": 7,
-				"width": 5,
-				"height": 6
-			},
-			"confirmation": "delivery",
-			"residential": False
-			}
-		try:
-			available_services = []
-			response_data = requests.post(
-				url=url,
-				auth=(self.api_id, self.api_password),
-				headers=headers,
-				data=json.dumps(payload)
-			)
-			response_data = json.loads(response_data.text)
-			# if 'serviceList' in response_data:
-			# 	for response in response_data['serviceList']:
-			# 		available_service = self.get_service_dict(response)
-			# 		available_services.append(available_service)
-
-			# 	return available_services
-			# else:
-			# 	frappe.throw(_('An Error occurred while fetching ShipStation prices: {0}')
-			# 		.format(response_data['message']))
-			if 'ExceptionMessage' not in response_data:
-				for response in response_data:
-					available_service = self.get_service_dict(response)
-					available_services.append(available_service)
-
-				return available_services
-			else:
-				frappe.throw(_('An Error occurred while fetching ShipStation prices: {0}')
-					.format(response_data['Message']))
-		except Exception:
-			show_error_alert("fetching ShipStation prices")
-
-		return []
 	def get_available_services(self, delivery_to_type, pickup_address,
 		delivery_address, shipment_parcel, description_of_content, pickup_date,
 		value_of_goods, pickup_contact=None, delivery_contact=None):
@@ -148,20 +50,9 @@ class ShipStationUtils():
 			'Accept': 'application/json',
 			'Access-Control-Allow-Origin': 'string'
 		}
-		# payload = self.generate_payload(
-		#    pickup_address=pickup_address,
-		#    pickup_contact=pickup_contact,
-		#    delivery_address=delivery_address,
-		#    delivery_contact=delivery_contact,
-		#    description_of_content=description_of_content,
-		#    value_of_goods=value_of_goods,
-		#    parcel_list=parcel_list,
-		#    pickup_date=pickup_date
-		# )
-		carrierCode = 'stamps_com'
 
 		payload = {
-			"carrierCode": carrierCode,
+			"carrierCode": CARRIER_CODE,
 			"serviceCode": None,
 			"packageCode": None,
 			"fromPostalCode": pickup_address.pincode,
@@ -193,15 +84,7 @@ class ShipStationUtils():
 				data=json.dumps(payload)
 			)
 			response_data = json.loads(response_data.text)
-			# if 'serviceList' in response_data:
-			#    for response in response_data['serviceList']:
-			#       available_service = self.get_service_dict(response)
-			#       available_services.append(available_service)
-
-			#    return available_services
-			# else:
-			#    frappe.throw(_('An Error occurred while fetching ShipStation prices: {0}')
-			#       .format(response_data['message']))
+			
 			if 'ExceptionMessage' not in response_data:
 				for response in response_data:
 					available_service = self.get_service_dict(response)
@@ -228,22 +111,81 @@ class ShipStationUtils():
 		delivery_address.address_title = self.trim_address(delivery_address)
 		parcel_list = self.get_parcel_list(json.loads(shipment_parcel), description_of_content)
 
-		url = 'https://api.letmeship.com/v1/shipments'
+		url = BASE_URL + '/shipments/createlabel'
 		headers = {
 			'Content-Type': 'application/json',
 			'Accept': 'application/json',
 			'Access-Control-Allow-Origin': 'string'
 		}
-		payload = self.generate_payload(
-			pickup_address=pickup_address,
-			pickup_contact=pickup_contact,
-			delivery_address=delivery_address,
-			delivery_contact=delivery_contact,
-			description_of_content=description_of_content,
-			value_of_goods=value_of_goods,
-			parcel_list=parcel_list,
-			pickup_date=pickup_date,
-			service_info=service_info)
+		payload = {
+			"carrierCode": "stamps_com",
+			"serviceCode": "usps_first_class_mail",
+			"packageCode": "package",
+			"confirmation": "delivery",
+			"shipDate": "2024-01-20",
+			"weight": {
+				"value": 3,
+				"units": "ounces"
+			},
+			"dimensions": {
+				"units": "inches",
+				"length": 7,
+				"width": 5,
+				"height": 6
+			},
+			"shipFrom": {
+				"name": "Jason Hodges",
+				"company": "ShipStation",
+				"street1": "2815 Exposition Blvd",
+				"street2": "Ste 2353242",
+				"street3": null,
+				"city": "Austin",
+				"state": "TX",
+				"postalCode": "78703",
+				"country": "US",
+				"phone": null,
+				"residential": false
+			},
+			"shipTo": {
+				"name": "The President",
+				"company": "US Govt",
+				"street1": "1600 Pennsylvania Ave",
+				"street2": "Oval Office",
+				"street3": null,
+				"city": "Washington",
+				"state": "DC",
+				"postalCode": "20500",
+				"country": "US",
+				"phone": null,
+				"residential": false
+			},
+			"insuranceOptions": null,
+			"internationalOptions": null,
+			"advancedOptions": null,
+			"testLabel": true
+			}
+		{
+			"carrierCode": CARRIER_CODE,
+			"serviceCode": None,
+			"packageCode": None,
+			"fromPostalCode": pickup_address.pincode,
+			"toState": delivery_address.state,
+			"toCountry": delivery_address.country_code,
+			"toPostalCode": delivery_address.pincode,
+			"toCity": delivery_address.city,
+			"weight": {
+				"value": parcel_list[0]["weight"] * 1000,
+				"units": "grams"
+			},
+			"dimensions": {
+				"units": "centimeters",
+				"length": parcel_list[0]["length"],
+				"width": parcel_list[0]["width"],
+				"height": parcel_list[0]["height"]
+			},
+			"confirmation": "delivery",
+			"residential": delivery_to_type == 'Company'
+			}
 		try:
 			response_data = requests.post(
 				url=url,
@@ -414,15 +356,13 @@ class ShipStationUtils():
 		# available_service.total_price = price_info['netPrice']
 		# available_service.price_info = price_info
 		available_service.service_provider = SHIPSTATION_PROVIDER
-		# available_service.id = response['id']
-		available_service.carrier = 'Stamps.com'
-		available_service.carrier_name = response['serviceCode']
-		# available_service.carrier_name = response['nickname']
-		available_service.service_name = response['serviceName']
-		print(available_service.service_name)
+		available_service.service_code = response['serviceCode']
+		available_service.servicename = response['serviceName']
+		available_service.carriername = 'Stamps.com'
 		available_service.is_preferred = 0
 		available_service.total_price = response["shipmentCost"]
 		available_service.price_info = response["shipmentCost"]
+		available_service.other_cost = response["otherCost"]
 
 		return available_service
 
