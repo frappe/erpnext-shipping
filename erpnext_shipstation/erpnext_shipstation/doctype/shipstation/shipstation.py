@@ -224,10 +224,16 @@ class ShipStationUtils():
 
          label_data = response_data['labelData']
          print('labelData: {}'.format(label_data))
-         create_label_pdf(label_data)
+
+         # 라벨 PDF로 뽑기
+         # base64 디코딩
+         pdf_bytes = base64.b64decode(label_data)
+
+         # PDF 파일로 저장
+         with open("LabelPDF.pdf", "wb") as pdf_file:
+            pdf_file.write(pdf_bytes)
 
          list_shipments_url = f'{BASE_URL}/shipments'
-         
          
          # if 'shipmentId' in response_data:
          #    shipment_amount = response_data['service']['priceInfo']['totalPrice']
@@ -253,14 +259,6 @@ class ShipStationUtils():
 
       except Exception as e:
          print(f"에러 발생: {e}")
-
-   def create_label_pdf(label): 
-      # base64 디코딩
-      pdf_bytes = base64.b64decode(label)
-
-      # PDF 파일로 저장
-      with open("LabelPDF.pdf", "wb") as pdf_file:
-         pdf_file.write(pdf_bytes)
 
    def get_label(self, shipment_id):
       # Retrieve shipment label from ShipStation
