@@ -201,7 +201,7 @@ def print_shipping_label(service_provider, shipment_id):
 		shipping_label = sendcloud.get_label(shipment_id)
 	elif service_provider == SHIPSTATION_PROVIDER:
 		shipstation = ShipStationUtils()
-		shipping_label = sendcloud.get_label(shipment_id)
+		shipping_label = shipstation.get_label(shipment_id)
 	return shipping_label
 
 @frappe.whitelist()

@@ -122,27 +122,6 @@ frappe.ui.form.on('Shipment', {
 function select_from_available_services(frm, available_services) {
 
 	var headers = [ __("Service Provider"), __("Parcel Service"), __("Parcel Service Type"), __("Price"), "" ];
-	// console.log(available_services);
-	// const arranged_services = available_services.reduce((prev, curr) => {
-	// 	if (curr.is_preferred) {
-	// 		prev.preferred_services.push(curr);
-	// 	} else {
-	// 		prev.other_services.push(curr);
-	// 	}
-	// 	return prev;
-	// }, { preferred_services: [], other_services: [] });
-	// console.log(arranged_services.other_services[1].service_name);
-
-	// frm.render_available_services = function(dialog, headers, arranged_services) {
-	// 	frappe.require('assets/erpnext_shipstation/js/shipment.js', function() {
-	// 		dialog.fields_dict.available_services.$wrapper.html(
-	// 			frappe.render_template('assets/erpnext_shipstation/js/shipment_service_selector', {
-	// 				'header_columns': headers,
-	// 				'data': arranged_services
-	// 			})
-	// 		);
-	// 	});
-	// };
 
 	frm.render_available_services = function(dialog, headers, available_services) {
 		frappe.require('assets/erpnext_shipstation/js/shipment.js', function() {
@@ -160,7 +139,7 @@ function select_from_available_services(frm, available_services) {
 								<td class="service-info" style="width:20%;">${service.service_provider}</td>
 								<td class="service-info" style="width:20%;">${service.carriername}</td>
 								<td class="service-info" style="width:40%;">${service.servicename}</td>
-								<td class="service-info" style="width:20%;">${format_currency(service.total_price, "EUR", 2)}</td>
+								<td class="service-info" style="width:20%;">${format_currency(service.total_price, "USD", 2)}</td>
 								<td style="width:10%;vertical-align: middle;">
 									<button
 										data-type="other_services"
