@@ -193,31 +193,28 @@ class ShipStationUtils():
             # print(response_data)
 
             order_id = response_data['orderId']
-            print('orderId: {}'.format(order_id))
-
             tracking_num = response_data['trackingNumber']
-            print('trackingNumber: {}'.format(tracking_num))
-
             label_data = response_data['labelData']
-            print('labelData: {}'.format(label_data))
+
+            # print('orderId: {}'.format(order_id))
+            # print('trackingNumber: {}'.format(tracking_num))
+            # print('labelData: {}'.format(label_data))
 
             # 라벨 PDF로 뽑기
-            # base64 디코딩
-            pdf_bytes = base64.b64decode(label_data)
-
-            # PDF 파일로 저장
-            with open("LabelPDF.pdf", "wb") as pdf_file:
+            pdf_bytes = base64.b64decode(label_data)  # base64 디코딩
+            with open("LabelPDF.pdf", "wb") as pdf_file:  # PDF 파일로 저장
                 pdf_file.write(pdf_bytes)
 
-            list_shipments_url = f'{BASE_URL}/shipments'
-            list_response_response = requests.post(
+            orderId = 2
+            # orderId로 shipments 리스트를 불러옴
+            list_shipments_url = f'{BASE_URL}/shipments?orderId={orderId}'
+            list_response_response = requests.get(
                 url=list_shipments_url,
-                auth=(self.api_id, self.api_password),
-                headers=headers,
-                data=json.dumps(body)
+                auth={self.api_id, self.api_password}
             )
 
-            print(list_response_response)
+            list_response_data = json.loads(list_response_response.text)
+            print(list_response_data)
             
             # if 'shipmentId' in response_data:
             #    shipment_amount = response_data['service']['priceInfo']['totalPrice']
