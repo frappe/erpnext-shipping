@@ -153,7 +153,7 @@ shipping_custom_fields = {
 		{
 			"fieldname": "parcel_service",
 			"label": "Parcel Service",
-			"fieldtype": "Link",
+			"fieldtype": "Data",  # needs to be "Data" for backward compat
 			"options": "Parcel Service",
 			"read_only": 1,
 			"insert_after": "delivery_type"
@@ -161,7 +161,7 @@ shipping_custom_fields = {
 		{
 			"fieldname": "parcel_service_type",
 			"label": "Parcel Service Type",
-			"fieldtype": "Link",
+			"fieldtype": "Data",  # needs to be "Data" for backward compat
 			"options": "Parcel Service Type",
 			"read_only": 1,
 			"insert_after": "parcel_service"
