@@ -70,7 +70,7 @@ def fetch_shipping_rates(pickup_from_type, delivery_to_type, pickup_address_name
 			delivery_address=delivery_address,
 			shipment_parcel=shipment_parcel
 		) or []
-		shipment_prices = shipment_prices + sendcloud_prices[:4] # remove after fixing scroll issue
+		shipment_prices = shipment_prices + sendcloud_prices
 	shipment_prices = sorted(shipment_prices, key=lambda k:k['total_price'])
 	return shipment_prices
 
