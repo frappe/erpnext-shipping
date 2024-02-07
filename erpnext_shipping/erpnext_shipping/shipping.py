@@ -115,6 +115,7 @@ def create_shipment(shipment, pickup_from_type, delivery_to_type, pickup_address
 		packlink = PackLinkUtils()
 		shipment_info = packlink.create_shipment(
 			pickup_address=pickup_address,
+			delivery_company_name=delivery_company_name,
 			delivery_address=delivery_address,
 			shipment_parcel=shipment_parcel,
 			description_of_content=description_of_content,

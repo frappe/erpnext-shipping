@@ -58,7 +58,7 @@ class PackLinkUtils():
 
 		return []
 
-	def create_shipment(self, pickup_address, delivery_address, shipment_parcel,
+	def create_shipment(self, pickup_address, delivery_company_name, delivery_address, shipment_parcel,
 		description_of_content, pickup_date, value_of_goods, pickup_contact,
 		delivery_contact, service_info):
 		# Create a transaction at PackLink
@@ -79,7 +79,7 @@ class PackLinkUtils():
 			'price': {},
 			'packages': self.get_parcel_list(json.loads(shipment_parcel)),
 			'service_id': service_info['service_id'],
-			'to': self.get_shipment_address_contact_dict(delivery_address, delivery_contact)
+			'to': self.get_shipment_address_contact_dict(delivery_address, delivery_contact, company_name=delivery_company_name)
 		}
 
 		url = 'https://api.packlink.com/v1/shipments'
@@ -197,11 +197,11 @@ class PackLinkUtils():
 		available_service.available_dates = response['available_dates']
 		return available_service
 
-	def get_shipment_address_contact_dict(self, address, contact):
+	def get_shipment_address_contact_dict(self, address, contact, company_name=None):
 		"""Returns a dict with Address and Contact Info for Packlink Payload."""
 		return {
 			'city': address.city,
-			'company': address.address_title,
+			'company': company_name or address.address_title,
 			'country': address.country_code,
 			'email': contact.email,
 			'name': contact.first_name,
