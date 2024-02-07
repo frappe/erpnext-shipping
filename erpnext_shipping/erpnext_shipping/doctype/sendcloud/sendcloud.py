@@ -8,22 +8,26 @@ import frappe
 import json
 from frappe import _
 from frappe.utils import flt
+from frappe.utils.data import get_link_to_form
 from frappe.model.document import Document
-from frappe.utils.password import get_decrypted_password
 from erpnext_shipping.erpnext_shipping.utils import show_error_alert
 
 SENDCLOUD_PROVIDER = 'SendCloud'
 
-class SendCloud(Document): pass
+class SendCloud(Document):
+	pass
+
 
 class SendCloudUtils():
 	def __init__(self):
-		self.api_secret = get_decrypted_password('SendCloud', 'SendCloud', 'api_secret', raise_exception=False)
-		self.api_key, self.enabled = frappe.db.get_value('SendCloud', 'SendCloud', ['api_key', 'enabled'])
+		settings = frappe.get_single("SendCloud")
+		self.api_key = settings.api_key
+		self.api_secret = settings.get_password("api_secret")
+		self.enabled = settings.enabled
 
 		if not self.enabled:
-			link = frappe.utils.get_link_to_form('SendCloud', 'SendCloud', frappe.bold('SendCloud Settings'))
-			frappe.throw(_('Please enable SendCloud Integration in {0}'.format(link)), title=_('Mandatory'))
+			link = get_link_to_form("SendCloud", "SendCloud", _("SendCloud Settings"))
+			frappe.throw(_("Please enable SendCloud Integration in {0}").format(link))
 
 	def get_available_services(self, delivery_address, shipment_parcel):
 		# Retrieve rates at SendCloud from specification stated.
@@ -31,9 +35,11 @@ class SendCloudUtils():
 			return []
 
 		try:
-			url = 'https://panel.sendcloud.sc/api/v2/shipping_methods'
-			responses = requests.get(url, auth=(self.api_key, self.api_secret))
-			responses_dict = json.loads(responses.text)
+			response = requests.get(
+				"https://panel.sendcloud.sc/api/v2/shipping_methods",
+				auth=(self.api_key, self.api_secret)
+			)
+			responses_dict = response.json()
 
 			if "error" in responses_dict:
 				error_message = responses_dict["error"]["message"]
@@ -41,8 +47,8 @@ class SendCloudUtils():
 
 			available_services = []
 			iso_code = delivery_address.country_code
-			for service in responses_dict['shipping_methods']:
-				countries = [country for country in service['countries'] if country['iso_2'] == iso_code]
+			for service in responses_dict.get("shipping_methods", []):
+				countries = [country for country in service['countries'] if country['iso_2'].upper() == iso_code.upper()]
 				if countries:
 					available_service = self.get_service_dict(service, countries[0], shipment_parcel)
 					available_services.append(available_service)
@@ -63,12 +69,13 @@ class SendCloudUtils():
 				delivery_contact, service_info, description_of_content, value_of_goods)
 			parcels.append(parcel_data)
 
-		data = { 'parcels': parcels }
-
 		try:
-			url = 'https://panel.sendcloud.sc/api/v2/parcels?errors=verbose'
-			response_data = requests.post(url, json=data, auth=(self.api_key, self.api_secret))
-			response_data = json.loads(response_data.text)
+			response = requests.post(
+				"https://panel.sendcloud.sc/api/v2/parcels?errors=verbose",
+				json={"parcels": parcels},
+				auth=(self.api_key, self.api_secret)
+			)
+			response_data = response.json()
 			if 'failed_parcels' in response_data:
 				error = response_data['failed_parcels'][0]['errors']
 				frappe.msgprint(_('Error occurred while creating Shipment: {0}').format(error),
@@ -180,7 +187,7 @@ class SendCloudUtils():
 			'request_label': True,
 			'email': delivery_contact.email,
 			'data': [],
-			'country': delivery_address.country_code,
+			'country': delivery_address.country_code.upper(),
 			'shipment': {
 				'id': service_info['service_id']
 			},
