@@ -84,6 +84,7 @@ def create_shipment(shipment, pickup_from_type, delivery_to_type, pickup_address
 	shipment_info, pickup_contact,  delivery_contact = None, None, None
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
+	delivery_company_name = get_delivery_company_name(shipment)
 
 	if pickup_from_type != 'Company':
 		pickup_contact = get_contact(pickup_contact_name)
@@ -127,6 +128,7 @@ def create_shipment(shipment, pickup_from_type, delivery_to_type, pickup_address
 		sendcloud = SendCloudUtils()
 		shipment_info = sendcloud.create_shipment(
 			shipment=shipment,
+			delivery_company_name=delivery_company_name,
 			delivery_address=delivery_address,
 			shipment_parcel=shipment_parcel,
 			description_of_content=description_of_content,
@@ -145,6 +147,19 @@ def create_shipment(shipment, pickup_from_type, delivery_to_type, pickup_address
 			update_delivery_note(delivery_notes=delivery_notes, shipment_info=shipment_info)
 
 	return shipment_info
+
+
+def get_delivery_company_name(shipment: str) -> str | None:
+	shipment_doc = frappe.get_doc('Shipment', shipment)
+	if shipment_doc.delivery_customer:
+		return frappe.db.get_value('Customer', shipment_doc.delivery_customer, 'customer_name')
+	if shipment_doc.delivery_supplier:
+		return frappe.db.get_value('Supplier', shipment_doc.delivery_supplier, 'supplier_name')
+	if shipment_doc.delivery_company:
+		return frappe.db.get_value('Company', shipment_doc.delivery_company, 'company_name')
+
+	return None
+
 
 @frappe.whitelist()
 def print_shipping_label(service_provider, shipment_id):

@@ -57,7 +57,7 @@ class SendCloudUtils():
 		except Exception:
 			show_error_alert("fetching SendCloud prices")
 
-	def create_shipment(self, shipment, delivery_address, delivery_contact, service_info, shipment_parcel,
+	def create_shipment(self, shipment, delivery_company_name, delivery_address, delivery_contact, service_info, shipment_parcel,
 		description_of_content, value_of_goods):
 		# Create a transaction at SendCloud
 		if not self.enabled or not self.api_key or not self.api_secret:
@@ -65,7 +65,7 @@ class SendCloudUtils():
 
 		parcels = []
 		for i, parcel in enumerate(json.loads(shipment_parcel), start=1):
-			parcel_data = self.get_parcel_dict(shipment, parcel, i, delivery_address,
+			parcel_data = self.get_parcel_dict(shipment, parcel, i, delivery_company_name, delivery_address,
 				delivery_contact, service_info, description_of_content, value_of_goods)
 			parcels.append(parcel_data)
 
@@ -174,11 +174,11 @@ class SendCloudUtils():
 		else:
 			return carrier_name.upper() if post_or_get=="get" else carrier_name.lower()
 
-	def get_parcel_dict(self, shipment, parcel, index, delivery_address, delivery_contact,
+	def get_parcel_dict(self, shipment, parcel, index, delivery_company_name, delivery_address, delivery_contact,
 		service_info, description_of_content, value_of_goods):
 		return {
 			'name': "{} {}".format(delivery_contact.first_name, delivery_contact.last_name),
-			'company_name': delivery_address.address_title,
+			'company_name': delivery_company_name or delivery_address.address_title,
 			'address': delivery_address.address_line1,
 			'address_2': delivery_address.address_line2 or '',
 			'city': delivery_address.city,
