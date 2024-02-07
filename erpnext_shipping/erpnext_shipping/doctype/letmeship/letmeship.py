@@ -33,8 +33,8 @@ class LetMeShipUtils():
 			return []
 
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
-		pickup_address.address_title = self.trim_address(pickup_address)
-		delivery_address.address_title = self.trim_address(delivery_address)
+		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
+		delivery_address.address_title = self.first_30_chars(delivery_address.address_title)
 		parcel_list = self.get_parcel_list(json.loads(shipment_parcel), description_of_content)
 
 		url = 'https://api.letmeship.com/v1/available'
@@ -76,15 +76,15 @@ class LetMeShipUtils():
 
 		return []
 
-	def create_shipment(self, pickup_address, delivery_address, shipment_parcel, description_of_content,
+	def create_shipment(self, pickup_address, delivery_company_name, delivery_address, shipment_parcel, description_of_content,
 		pickup_date, value_of_goods, service_info, pickup_contact=None, delivery_contact=None):
 		# Create a transaction at LetMeShip
 		if not self.enabled or not self.api_id or not self.api_password:
 			return []
 
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
-		pickup_address.address_title = self.trim_address(pickup_address)
-		delivery_address.address_title = self.trim_address(delivery_address)
+		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
+		delivery_address.address_title = self.first_30_chars(delivery_company_name or delivery_address.address_title)
 		parcel_list = self.get_parcel_list(json.loads(shipment_parcel), description_of_content)
 
 		url = 'https://api.letmeship.com/v1/shipments'
@@ -253,10 +253,10 @@ class LetMeShipUtils():
 			payload['labelEmail'] = True
 		return payload
 
-	def trim_address(self, address):
+	def first_30_chars(self, address_title: str):
 		# LetMeShip has a limit of 30 characters for Company field
-		if len(address.address_title) > 30:
-			return address.address_title[:30]
+		if len(address_title) > 30:
+			return address_title[:30]
 
 	def get_service_dict(self, response):
 		"""Returns a dictionary with service info."""
