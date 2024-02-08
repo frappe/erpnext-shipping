@@ -69,8 +69,7 @@ frappe.ui.form.on('Shipment', {
 			freeze: true,
 			freeze_message: __("Printing Shipping Label"),
 			args: {
-				shipment_id: frm.doc.shipment_id,
-				service_provider: frm.doc.service_provider
+				shipment: frm.doc.name,
 			},
 			callback: function(r) {
 				if (r.message) {

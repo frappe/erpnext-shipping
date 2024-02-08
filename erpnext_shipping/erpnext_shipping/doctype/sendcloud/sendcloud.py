@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import requests
 import frappe
 import json
+
+from requests.exceptions import HTTPError
 from frappe import _
 from frappe.utils import flt
 from frappe.utils.data import get_link_to_form
@@ -112,6 +114,19 @@ class SendCloudUtils():
 				frappe.msgprint(msg=_(message), title=_("Label Not Found"))
 		except Exception:
 			show_error_alert("printing SendCloud Label")
+
+	def download_label(self, label_url: str):
+		"""Download label from SendCloud."""
+		try:
+			resp = requests.get(label_url, auth=(self.api_key, self.api_secret))
+			resp.raise_for_status()
+			return resp.content
+		except HTTPError:
+			frappe.msgprint(
+				_("An error occurred while downloading label from SendCloud"),
+				indicator='orange',
+				alert=True
+			)
 
 	def get_tracking_data(self, shipment_id):
 		# return SendCloud tracking data

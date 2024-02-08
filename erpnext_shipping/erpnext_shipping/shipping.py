@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 import frappe
 import json
 from six import string_types
-from frappe import _
-from frappe.utils import flt
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 from erpnext_shipping.erpnext_shipping.utils import get_address, get_contact, match_parcel_service_type_carrier
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, LetMeShipUtils
@@ -164,7 +162,11 @@ def get_delivery_company_name(shipment: str) -> str | None:
 
 
 @frappe.whitelist()
-def print_shipping_label(service_provider, shipment_id):
+def print_shipping_label(shipment: str):
+	shipment_doc = frappe.get_doc("Shipment", shipment)
+	service_provider = shipment_doc.service_provider
+	shipment_id = shipment_doc.shipment_id
+
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = LetMeShipUtils()
 		shipping_label = letmeship.get_label(shipment_id)
@@ -173,8 +175,30 @@ def print_shipping_label(service_provider, shipment_id):
 		shipping_label = packlink.get_label(shipment_id)
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
-		shipping_label = sendcloud.get_label(shipment_id)
+		shipping_label = []
+		_labels = sendcloud.get_label(shipment_id)
+		for label_url in _labels:
+			content = sendcloud.download_label(label_url)
+			file_url = save_label_as_attachment(shipment, content)
+			shipping_label.append(file_url) 
+
 	return shipping_label
+
+
+def save_label_as_attachment(shipment: str, content: bytes) -> str:
+	"""Store label as attachment to Shipment and return the URL."""
+	attachment = frappe.new_doc("File")
+
+	attachment.file_name = f"label_{shipment}.pdf"
+	attachment.content = content
+	attachment.folder = "Home/Attachments"
+	attachment.attached_to_doctype = "Shipment"
+	attachment.attached_to_name = shipment
+	attachment.is_private = 1
+	attachment.save()
+
+	return attachment.file_url
+
 
 @frappe.whitelist()
 def update_tracking(shipment, service_provider, shipment_id, delivery_notes=[]):
