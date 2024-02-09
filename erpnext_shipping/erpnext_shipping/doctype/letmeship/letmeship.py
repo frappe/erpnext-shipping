@@ -322,5 +322,5 @@ class LetMeShipUtils():
 				'phoneNumber': contact.phone,
 				'phoneNumberPrefix': contact.phone_prefix
 			},
-			'email': contact.email
+			'email': contact.email_id
 		}

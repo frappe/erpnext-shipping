@@ -200,7 +200,7 @@ class SendCloudUtils():
 			'postal_code': delivery_address.pincode,
 			'telephone': delivery_contact.phone,
 			'request_label': True,
-			'email': delivery_contact.email,
+			'email': delivery_contact.email_id,
 			'data': [],
 			'country': delivery_address.country_code.upper(),
 			'shipment': {

@@ -203,7 +203,7 @@ class PackLinkUtils():
 			'city': address.city,
 			'company': company_name or address.address_title,
 			'country': address.country_code,
-			'email': contact.email,
+			'email': contact.email_id,
 			'name': contact.first_name,
 			'phone': contact.phone,
 			'state': address.country,
