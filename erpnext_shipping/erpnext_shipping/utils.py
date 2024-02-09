@@ -4,6 +4,8 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
+from frappe.utils.data import get_link_to_form
+
 
 def get_tracking_url(carrier, tracking_number):
 	# Return the formatted Tracking URL.
@@ -60,11 +62,14 @@ def get_contact(contact_name):
 	contact = frappe.db.get_value('Contact', contact_name, fields, as_dict=1)
 
 	if not contact.last_name:
-		frappe.throw(_("Last Name is mandatory to continue. </br> \
-				Please set Last Name for Contact <a href='#Form/Contact/{0}'>{1}</a>"
-			).format(contact_name, contact_name))
+		frappe.throw(
+			msg=_("Please set Last Name for Contact {0}").format(get_link_to_form("Contact", contact_name)),
+			title=_("Last Name is mandatory to continue."),
+		)
+
 	if not contact.phone:
 		contact.phone = contact.mobile_no
+
 	return contact
 
 def match_parcel_service_type_carrier(shipment_prices, reference):
