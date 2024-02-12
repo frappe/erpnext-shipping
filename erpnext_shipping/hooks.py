@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from . import __version__ as app_version
 
 app_name = "erpnext_shipping"
@@ -33,9 +31,7 @@ app_include_js = "shipping.bundle.js"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {
-	"Shipment" : "public/js/shipment.js"
-}
+doctype_js = {"Shipment": "public/js/shipment.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -48,7 +44,7 @@ doctype_js = {
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# "Role": "home_page"
 # }
 
 # Generators
@@ -98,17 +94,13 @@ after_install = "erpnext_shipping.install.after_install"
 # 		"on_update": "method",
 # 		"on_cancel": "method",
 # 		"on_trash": "method"
-#	}
+# }
 # }
 
 # Scheduled Tasks
 # ---------------
 
-scheduler_events = {
-	"daily": [
-		"erpnext_shipping.erpnext_shipping.utils.update_tracking_info_daily"
-	]
-}
+scheduler_events = {"daily": ["erpnext_shipping.erpnext_shipping.utils.update_tracking_info_daily"]}
 
 # Testing
 # -------
@@ -140,7 +132,7 @@ shipping_custom_fields = {
 			"label": "Shipping Details",
 			"fieldtype": "Section Break",
 			"collapsible": 1,
-			"insert_after": "sales_team"
+			"insert_after": "sales_team",
 		},
 		{
 			"fieldname": "delivery_type",
@@ -148,7 +140,7 @@ shipping_custom_fields = {
 			"fieldtype": "Data",
 			"read_only": 1,
 			"translatable": 0,
-			"insert_after": "shipping_sec_break"
+			"insert_after": "shipping_sec_break",
 		},
 		{
 			"fieldname": "parcel_service",
@@ -156,7 +148,7 @@ shipping_custom_fields = {
 			"fieldtype": "Data",  # needs to be "Data" for backward compat
 			"options": "Parcel Service",
 			"read_only": 1,
-			"insert_after": "delivery_type"
+			"insert_after": "delivery_type",
 		},
 		{
 			"fieldname": "parcel_service_type",
@@ -164,12 +156,12 @@ shipping_custom_fields = {
 			"fieldtype": "Data",  # needs to be "Data" for backward compat
 			"options": "Parcel Service Type",
 			"read_only": 1,
-			"insert_after": "parcel_service"
+			"insert_after": "parcel_service",
 		},
 		{
 			"fieldname": "shipping_col_break",
 			"fieldtype": "Column Break",
-			"insert_after": "parcel_service_type"
+			"insert_after": "parcel_service_type",
 		},
 		{
 			"fieldname": "tracking_number",
@@ -177,7 +169,7 @@ shipping_custom_fields = {
 			"fieldtype": "Data",
 			"read_only": 1,
 			"translatable": 0,
-			"insert_after": "shipping_col_break"
+			"insert_after": "shipping_col_break",
 		},
 		{
 			"fieldname": "tracking_url",
@@ -185,7 +177,7 @@ shipping_custom_fields = {
 			"fieldtype": "Data",
 			"read_only": 1,
 			"translatable": 0,
-			"insert_after": "tracking_number"
+			"insert_after": "tracking_number",
 		},
 		{
 			"fieldname": "tracking_status",
@@ -193,7 +185,7 @@ shipping_custom_fields = {
 			"fieldtype": "Data",
 			"read_only": 1,
 			"translatable": 0,
-			"insert_after": "tracking_url"
+			"insert_after": "tracking_url",
 		},
 		{
 			"fieldname": "tracking_status_info",
@@ -201,7 +193,7 @@ shipping_custom_fields = {
 			"fieldtype": "Data",
 			"read_only": 1,
 			"translatable": 0,
-			"insert_after": "tracking_status"
-		}
+			"insert_after": "tracking_status",
+		},
 	]
 }
