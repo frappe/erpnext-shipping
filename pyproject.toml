@@ -1,0 +1,21 @@
+[project]
+name = "erpnext_shipping"
+authors = [
+    { name = "Frappe Technologies Pvt Ltd and contributors", email = "developers@frappe.io"}
+]
+description = "Shipping Integrations for ERPNext"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = []
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.format]
+indent-style = "tab"
+docstring-code-format = true
