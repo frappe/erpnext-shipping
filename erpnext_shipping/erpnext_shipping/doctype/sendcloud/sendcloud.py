@@ -36,9 +36,15 @@ class SendCloudUtils:
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
+		to_country = delivery_address.country_code.upper()
+
 		try:
 			response = requests.get(
-				"https://panel.sendcloud.sc/api/v2/shipping_methods", auth=(self.api_key, self.api_secret)
+				"https://panel.sendcloud.sc/api/v2/shipping_methods",
+				params={
+					"to_country": to_country,
+				},
+				auth=(self.api_key, self.api_secret),
 			)
 			responses_dict = response.json()
 
