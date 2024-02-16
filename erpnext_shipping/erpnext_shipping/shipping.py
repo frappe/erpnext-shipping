@@ -22,7 +22,7 @@ def fetch_shipping_rates(
 	delivery_to_type,
 	pickup_address_name,
 	delivery_address_name,
-	shipment_parcel,
+	parcels,
 	description_of_content,
 	pickup_date,
 	value_of_goods,
@@ -36,6 +36,7 @@ def fetch_shipping_rates(
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
+	parcels = json.loads(parcels)
 
 	if letmeship_enabled:
 		pickup_contact = None
@@ -58,7 +59,7 @@ def fetch_shipping_rates(
 				delivery_to_type=delivery_to_type,
 				pickup_address=pickup_address,
 				delivery_address=delivery_address,
-				shipment_parcel=shipment_parcel,
+				parcels=parcels,
 				description_of_content=description_of_content,
 				pickup_date=pickup_date,
 				value_of_goods=value_of_goods,
@@ -76,7 +77,7 @@ def fetch_shipping_rates(
 			packlink.get_available_services(
 				pickup_address=pickup_address,
 				delivery_address=delivery_address,
-				shipment_parcel=shipment_parcel,
+				parcels=parcels,
 				pickup_date=pickup_date,
 			)
 			or []
@@ -88,7 +89,7 @@ def fetch_shipping_rates(
 		sendcloud = SendCloudUtils()
 		sendcloud_prices = (
 			sendcloud.get_available_services(
-				delivery_address=delivery_address, shipment_parcel=shipment_parcel
+				delivery_address=delivery_address, parcels=parcels
 			)
 			or []
 		)

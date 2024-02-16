@@ -35,7 +35,7 @@ class LetMeShipUtils:
 		delivery_to_type,
 		pickup_address,
 		delivery_address,
-		shipment_parcel,
+		parcels,
 		description_of_content,
 		pickup_date,
 		value_of_goods,
@@ -49,7 +49,7 @@ class LetMeShipUtils:
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
 		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
 		delivery_address.address_title = self.first_30_chars(delivery_address.address_title)
-		parcel_list = self.get_parcel_list(json.loads(shipment_parcel), description_of_content)
+		parcel_list = self.get_parcel_list(parcels, description_of_content)
 
 		url = "https://api.letmeship.com/v1/available"
 		headers = {
@@ -318,9 +318,9 @@ class LetMeShipUtils:
 		if delivery_contact.gender == "Male":
 			delivery_contact.title = "MR"
 
-	def get_parcel_list(self, shipment_parcel, description_of_content):
+	def get_parcel_list(self, parcels, description_of_content):
 		parcel_list = []
-		for parcel in shipment_parcel:
+		for parcel in parcels:
 			formatted_parcel = {}
 			formatted_parcel["height"] = parcel.get("height")
 			formatted_parcel["width"] = parcel.get("width")

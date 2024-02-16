@@ -31,7 +31,7 @@ class SendCloudUtils:
 			link = get_link_to_form("SendCloud", "SendCloud", _("SendCloud Settings"))
 			frappe.throw(_("Please enable SendCloud Integration in {0}").format(link))
 
-	def get_available_services(self, delivery_address, shipment_parcel):
+	def get_available_services(self, delivery_address, parcels: list[dict]):
 		# Retrieve rates at SendCloud from specification stated.
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
@@ -55,7 +55,7 @@ class SendCloudUtils:
 					if country["iso_2"].upper() == iso_code.upper()
 				]
 				if countries:
-					available_service = self.get_service_dict(service, countries[0], shipment_parcel)
+					available_service = self.get_service_dict(service, countries[0], parcels)
 					available_services.append(available_service)
 
 			return available_services
@@ -182,9 +182,9 @@ class SendCloudUtils:
 		except Exception:
 			show_error_alert("updating SendCloud Shipment")
 
-	def total_parcel_price(self, parcel_price, shipment_parcel):
+	def total_parcel_price(self, parcel_price, parcels: list[dict]):
 		count = 0
-		for parcel in shipment_parcel:
+		for parcel in parcels:
 			count += parcel.get("count")
 		return flt(parcel_price) * count
 
@@ -198,14 +198,15 @@ class SendCloudUtils:
 		parcel_list.append(formatted_parcel)
 		return parcel_list
 
-	def get_service_dict(self, service, country, shipment_parcel):
+	def get_service_dict(self, service, country, parcels: list[dict]):
 		"""Returns a dictionary with service info."""
 		available_service = frappe._dict()
 		available_service.service_provider = "SendCloud"
 		available_service.carrier = self.get_carrier(service["carrier"], post_or_get="get")
 		available_service.service_name = service["name"]
-		available_service.total_price = self.total_parcel_price(country["price"], json.loads(shipment_parcel))
+		available_service.total_price = self.total_parcel_price(country["price"], parcels)
 		available_service.service_id = service["id"]
+
 		return available_service
 
 	def get_carrier(self, carrier_name, post_or_get=None):

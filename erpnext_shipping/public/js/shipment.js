@@ -41,7 +41,7 @@ frappe.ui.form.on('Shipment', {
 					delivery_to_type: frm.doc.delivery_to_type,
 					pickup_address_name: frm.doc.pickup_address_name,
 					delivery_address_name: frm.doc.delivery_address_name,
-					shipment_parcel: frm.doc.shipment_parcel,
+					parcels: frm.doc.shipment_parcel,
 					description_of_content: frm.doc.description_of_content,
 					pickup_date: frm.doc.pickup_date,
 					pickup_contact_name: frm.doc.pickup_from_type === 'Company' ? frm.doc.pickup_contact_person : frm.doc.pickup_contact_name,

@@ -27,9 +27,9 @@ class PackLinkUtils:
 			link = frappe.utils.get_link_to_form("Packlink", "Packlink", frappe.bold("Packlink Settings"))
 			frappe.throw(_(f"Please enable Packlink Integration in {link}"), title=_("Mandatory"))
 
-	def get_available_services(self, pickup_address, delivery_address, shipment_parcel, pickup_date):
+	def get_available_services(self, pickup_address, delivery_address, parcels, pickup_date):
 		# Retrieve rates at PackLink from specification stated.
-		parcel_list = self.get_parcel_list(json.loads(shipment_parcel))
+		parcel_list = self.get_parcel_list(parcels)
 		shipment_parcel_params = self.get_formatted_parcel_params(parcel_list)
 		url = self.get_formatted_request_url(pickup_address, delivery_address, shipment_parcel_params)
 
