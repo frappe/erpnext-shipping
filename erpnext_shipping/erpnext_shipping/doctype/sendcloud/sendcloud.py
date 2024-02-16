@@ -53,15 +53,17 @@ class SendCloudUtils:
 				frappe.throw(error_message, title=_("SendCloud"))
 
 			available_services = []
-			iso_code = delivery_address.country_code
 			for service in responses_dict.get("shipping_methods", []):
 				countries = [
 					country
 					for country in service["countries"]
-					if country["iso_2"].upper() == iso_code.upper()
+					if country["iso_2"] == to_country
 				]
-				if countries:
-					available_service = self.get_service_dict(service, countries[0], parcels)
+
+				if countries and check_weight(service, parcels):
+					available_service = self.get_service_dict(
+						service, countries[0], parcels
+					)
 					available_services.append(available_service)
 
 			return available_services
@@ -253,3 +255,13 @@ class SendCloudUtils:
 			"weight": parcel.get("weight"),
 			"parcel_items": self.get_parcel_items(parcel, description_of_content, value_of_goods),
 		}
+
+
+def check_weight(service: dict, parcels: list[dict]) -> bool:
+	"""Check if the weight of any parcel is within the range of the service."""
+	max_weight_kg = float(service["max_weight"])
+	min_weight_kg = float(service["min_weight"])
+	return any(
+		max_weight_kg > parcel.get("weight") and min_weight_kg <= parcel.get("weight")
+		for parcel in parcels
+	)
