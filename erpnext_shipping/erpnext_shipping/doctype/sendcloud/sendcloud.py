@@ -212,7 +212,10 @@ class SendCloudUtils:
 		available_service.service_provider = "SendCloud"
 		available_service.carrier = self.get_carrier(service["carrier"], post_or_get="get")
 		available_service.service_name = service["name"]
-		available_service.total_price = self.total_parcel_price(country["price"], parcels)
+
+		price = country["price"] or sum(price_part["value"] for price_part in country["price_breakdown"])
+		available_service.total_price = self.total_parcel_price(price, parcels)
+
 		available_service.service_id = service["id"]
 
 		return available_service
