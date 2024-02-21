@@ -174,7 +174,7 @@ shipping_custom_fields = {
 		{
 			"fieldname": "tracking_url",
 			"label": "Tracking URL",
-			"fieldtype": "Data",
+			"fieldtype": "Small Text",
 			"read_only": 1,
 			"translatable": 0,
 			"insert_after": "tracking_number",

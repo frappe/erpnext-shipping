@@ -1,1 +1,2 @@
 erpnext_shipping.erpnext_shipping.patches.create_custom_delivery_note_fields # 2024-01-29
+erpnext_shipping.erpnext_shipping.patches.change_tracking_url_column_type
