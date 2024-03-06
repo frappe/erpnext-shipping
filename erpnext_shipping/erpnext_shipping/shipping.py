@@ -4,10 +4,8 @@ import json
 
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
-from six import string_types
 
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, LetMeShipUtils
-from erpnext_shipping.erpnext_shipping.doctype.packlink.packlink import PACKLINK_PROVIDER, PackLinkUtils
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
@@ -32,7 +30,6 @@ def fetch_shipping_rates(
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
-	packlink_enabled = frappe.db.get_single_value("Packlink", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
@@ -70,20 +67,6 @@ def fetch_shipping_rates(
 		)
 		letmeship_prices = match_parcel_service_type_carrier(letmeship_prices, ["carrier", "carrier_name"])
 		shipment_prices = shipment_prices + letmeship_prices
-
-	if packlink_enabled:
-		packlink = PackLinkUtils()
-		packlink_prices = (
-			packlink.get_available_services(
-				pickup_address=pickup_address,
-				delivery_address=delivery_address,
-				parcels=parcels,
-				pickup_date=pickup_date,
-			)
-			or []
-		)
-		packlink_prices = match_parcel_service_type_carrier(packlink_prices, ["carrier_name", "carrier"])
-		shipment_prices = shipment_prices + packlink_prices
 
 	if sendcloud_enabled and pickup_from_type == "Company":
 		sendcloud = SendCloudUtils()
@@ -153,21 +136,6 @@ def create_shipment(
 			service_info=service_info,
 		)
 
-	if service_info["service_provider"] == PACKLINK_PROVIDER:
-		packlink = PackLinkUtils()
-		shipment_info = packlink.create_shipment(
-			pickup_address=pickup_address,
-			delivery_company_name=delivery_company_name,
-			delivery_address=delivery_address,
-			shipment_parcel=shipment_parcel,
-			description_of_content=description_of_content,
-			pickup_date=pickup_date,
-			value_of_goods=value_of_goods,
-			pickup_contact=pickup_contact,
-			delivery_contact=delivery_contact,
-			service_info=service_info,
-		)
-
 	if service_info["service_provider"] == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		shipment_info = sendcloud.create_shipment(
@@ -221,9 +189,6 @@ def print_shipping_label(shipment: str):
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = LetMeShipUtils()
 		shipping_label = letmeship.get_label(shipment_id)
-	elif service_provider == PACKLINK_PROVIDER:
-		packlink = PackLinkUtils()
-		shipping_label = packlink.get_label(shipment_id)
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		shipping_label = []
@@ -261,9 +226,6 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = LetMeShipUtils()
 		tracking_data = letmeship.get_tracking_data(shipment_id)
-	elif service_provider == PACKLINK_PROVIDER:
-		packlink = PackLinkUtils()
-		tracking_data = packlink.get_tracking_data(shipment_id)
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
