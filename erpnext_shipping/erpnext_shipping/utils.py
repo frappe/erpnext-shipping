@@ -85,10 +85,12 @@ def match_parcel_service_type_carrier(shipment_prices, reference):
 
 
 def show_error_alert(action):
-	log = frappe.log_error(frappe.get_traceback())
-	link_to_log = frappe.utils.get_link_to_form("Error Log", log.name, "See what happened.")
+	log = frappe.log_error(title="Shipping Error")
+	link_to_log = get_link_to_form("Error Log", log.name, "See what happened.")
 	frappe.msgprint(
-		_("An Error occurred while {0}. {1}").format(action, link_to_log), indicator="orange", alert=True
+		msg=_("An Error occurred while {0}. {1}").format(action, link_to_log),
+		indicator="orange",
+		alert=True
 	)
 
 
