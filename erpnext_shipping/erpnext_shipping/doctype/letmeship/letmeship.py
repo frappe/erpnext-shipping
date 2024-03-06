@@ -68,23 +68,23 @@ class LetMeShipUtils:
 			pickup_date=pickup_date,
 		)
 		try:
-			available_services = []
 			response_data = requests.post(
 				url=url, auth=(self.api_id, self.api_password), headers=headers, data=json.dumps(payload)
 			)
 			response_data = json.loads(response_data.text)
-			if "serviceList" in response_data:
+			if "status" in response_data and response_data["status"]["code"] != 0:
+				frappe.throw(
+					_("An Error occurred while fetching LetMeShip prices:\n{0}").format(
+						json.dumps(response_data["status"], indent=4)
+					)
+				)
+			if "serviceList" in response_data and response_data["serviceList"]:
+				available_services = []
 				for response in response_data["serviceList"]:
 					available_service = self.get_service_dict(response)
 					available_services.append(available_service)
 
 				return available_services
-			else:
-				frappe.throw(
-					_("An Error occurred while fetching LetMeShip prices: {0}").format(
-						response_data["message"]
-					)
-				)
 		except Exception:
 			show_error_alert("fetching LetMeShip prices")
 
