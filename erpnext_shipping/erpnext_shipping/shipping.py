@@ -65,8 +65,8 @@ def fetch_shipping_rates(
 			)
 			or []
 		)
-		letmeship_prices = match_parcel_service_type_carrier(letmeship_prices, ["carrier", "carrier_name"])
-		shipment_prices = shipment_prices + letmeship_prices
+		letmeship_prices = match_parcel_service_type_carrier(letmeship_prices, "carrier", "service_name")
+		shipment_prices += letmeship_prices
 
 	if sendcloud_enabled and pickup_from_type == "Company":
 		sendcloud = SendCloudUtils()
@@ -76,7 +76,9 @@ def fetch_shipping_rates(
 			)
 			or []
 		)
-		shipment_prices = shipment_prices + sendcloud_prices
+		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
+		shipment_prices += sendcloud_prices
+
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
 

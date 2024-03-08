@@ -285,8 +285,8 @@ class LetMeShipUtils:
 		available_service.service_provider = LETMESHIP_PROVIDER
 		available_service.id = basic_info["id"]
 		available_service.carrier = basic_info["carrier"]
-		available_service.carrier_name = basic_info["name"]
-		available_service.service_name = ""
+		available_service.carrier_name = basic_info["carrier"]
+		available_service.service_name = basic_info["name"]
 		available_service.is_preferred = 0
 		available_service.real_weight = price_info["realWeight"]
 		available_service.total_price = price_info["netPrice"]
