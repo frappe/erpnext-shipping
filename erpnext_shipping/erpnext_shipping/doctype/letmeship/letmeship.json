@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "use_test_environment",
   "api_id",
   "api_password",
   "information"
@@ -21,23 +22,29 @@
    "fieldname": "api_id",
    "fieldtype": "Data",
    "label": "API ID",
-   "read_only_depends_on": "eval:doc.enabled == 0"
+   "mandatory_depends_on": "enabled"
   },
   {
    "fieldname": "api_password",
    "fieldtype": "Password",
    "label": "API Password",
-   "read_only_depends_on": "eval:doc.enabled == 0"
+   "mandatory_depends_on": "enabled"
   },
   {
    "fieldname": "information",
    "fieldtype": "HTML",
    "options": "<div><span class=\"text-medium text-muted\">For steps to generate the API ID, click <a href=\"https://www.letmeship.com/en-at/connect-the-shipping-interface/\" target=\"_blank\">here</a></span></div>"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_test_environment",
+   "fieldtype": "Check",
+   "label": "Use Test Environment"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-12-16 15:36:48.424827",
+ "modified": "2024-03-08 13:17:25.011707",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "LetMeShip",
@@ -57,5 +64,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

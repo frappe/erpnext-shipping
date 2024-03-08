@@ -5,7 +5,7 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
-from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, LetMeShipUtils
+from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import LETMESHIP_PROVIDER, get_letmeship_utils
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
@@ -50,7 +50,7 @@ def fetch_shipping_rates(
 			delivery_contact = get_company_contact(user=pickup_contact_name)
 			delivery_contact.email_id = delivery_contact.pop("email", None)
 
-		letmeship = LetMeShipUtils()
+		letmeship = get_letmeship_utils()
 		letmeship_prices = (
 			letmeship.get_available_services(
 				delivery_to_type=delivery_to_type,
@@ -122,7 +122,7 @@ def create_shipment(
 		pickup_contact.email_id = pickup_contact.pop("email", None)
 
 	if service_info["service_provider"] == LETMESHIP_PROVIDER:
-		letmeship = LetMeShipUtils()
+		letmeship = get_letmeship_utils()
 		shipment_info = letmeship.create_shipment(
 			pickup_address=pickup_address,
 			delivery_company_name=delivery_company_name,
@@ -187,7 +187,7 @@ def print_shipping_label(shipment: str):
 	shipment_id = shipment_doc.shipment_id
 
 	if service_provider == LETMESHIP_PROVIDER:
-		letmeship = LetMeShipUtils()
+		letmeship = get_letmeship_utils()
 		shipping_label = letmeship.get_label(shipment_id)
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
@@ -224,7 +224,7 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	# Update Tracking info in Shipment
 	tracking_data = None
 	if service_provider == LETMESHIP_PROVIDER:
-		letmeship = LetMeShipUtils()
+		letmeship = get_letmeship_utils()
 		tracking_data = letmeship.get_tracking_data(shipment_id)
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()

@@ -8,11 +8,12 @@ import frappe
 import requests
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils.password import get_decrypted_password
-
+from frappe.utils.data import get_link_to_form
 from erpnext_shipping.erpnext_shipping.utils import show_error_alert
 
 LETMESHIP_PROVIDER = "LetMeShip"
+PROD_BASE_URL = "https://api.letmeship.com/v1"
+TEST_BASE_URL = "https://api.test.letmeship.com/v1"
 
 
 class LetMeShip(Document):
@@ -20,15 +21,10 @@ class LetMeShip(Document):
 
 
 class LetMeShipUtils:
-	def __init__(self):
-		self.api_password = get_decrypted_password(
-			"LetMeShip", "LetMeShip", "api_password", raise_exception=False
-		)
-		self.api_id, self.enabled = frappe.db.get_value("LetMeShip", "LetMeShip", ["api_id", "enabled"])
-
-		if not self.enabled:
-			link = frappe.utils.get_link_to_form("LetMeShip", "LetMeShip", frappe.bold("LetMeShip Settings"))
-			frappe.throw(_(f"Please enable LetMeShip Integration in {link}"), title=_("Mandatory"))
+	def __init__(self, base_url: str, api_id: str, api_password: str):
+		self.base_url = base_url
+		self.api_password = api_password
+		self.api_id = api_id
 
 	def get_available_services(
 		self,
@@ -42,16 +38,12 @@ class LetMeShipUtils:
 		pickup_contact=None,
 		delivery_contact=None,
 	):
-		# Retrieve rates at LetMeShip from specification stated.
-		if not self.enabled or not self.api_id or not self.api_password:
-			return []
-
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
 		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
 		delivery_address.address_title = self.first_30_chars(delivery_address.address_title)
 		parcel_list = self.get_parcel_list(parcels, description_of_content)
 
-		url = "https://api.letmeship.com/v1/available"
+		url = f"{self.base_url}/available"
 		headers = {
 			"Content-Type": "application/json",
 			"Accept": "application/json",
@@ -103,10 +95,6 @@ class LetMeShipUtils:
 		pickup_contact=None,
 		delivery_contact=None,
 	):
-		# Create a transaction at LetMeShip
-		if not self.enabled or not self.api_id or not self.api_password:
-			return []
-
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
 		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
 		delivery_address.address_title = self.first_30_chars(
@@ -114,7 +102,7 @@ class LetMeShipUtils:
 		)
 		parcel_list = self.get_parcel_list(json.loads(shipment_parcel), description_of_content)
 
-		url = "https://api.letmeship.com/v1/shipments"
+		url = f"{self.base_url}/shipments"
 		headers = {
 			"Content-Type": "application/json",
 			"Accept": "application/json",
@@ -136,10 +124,17 @@ class LetMeShipUtils:
 				url=url, auth=(self.api_id, self.api_password), headers=headers, data=json.dumps(payload)
 			)
 			response_data = json.loads(response_data.text)
-			if "shipmentId" in response_data:
+			if response_data["status"]["code"] != "0":
+				frappe.throw(
+					_("An Error occurred while creating Shipment: {0}").format(
+						json.dumps(response_data["status"], indent=4)
+					)
+				)
+			else:
 				shipment_amount = response_data["service"]["priceInfo"]["totalPrice"]
 				awb_number = ""
-				url = "https://api.letmeship.com/v1/shipments/{id}".format(id=response_data["shipmentId"])
+				shipment_id = response_data["shipmentId"]
+				url = f"{self.base_url}/shipments/{shipment_id}"
 				tracking_response = requests.get(url, auth=(self.api_id, self.api_password), headers=headers)
 				tracking_response_data = json.loads(tracking_response.text)
 				if "trackingData" in tracking_response_data:
@@ -148,16 +143,12 @@ class LetMeShipUtils:
 							awb_number = parcel["awbNumber"]
 				return {
 					"service_provider": LETMESHIP_PROVIDER,
-					"shipment_id": response_data["shipmentId"],
+					"shipment_id": shipment_id,
 					"carrier": service_info["carrier"],
 					"carrier_service": service_info["service_name"],
 					"shipment_amount": shipment_amount,
 					"awb_number": awb_number,
 				}
-			elif "message" in response_data:
-				frappe.throw(
-					_("An Error occurred while creating Shipment: {0}").format(response_data["message"])
-				)
 		except Exception:
 			show_error_alert("creating LetMeShip Shipment")
 
@@ -169,7 +160,7 @@ class LetMeShipUtils:
 				"Accept": "application/json",
 				"Access-Control-Allow-Origin": "string",
 			}
-			url = f"https://api.letmeship.com/v1/shipments/{shipment_id}/documents?types=LABEL"
+			url = f"{self.base_url}/shipments/{shipment_id}/documents?types=LABEL"
 			shipment_label_response = requests.get(
 				url, auth=(self.api_id, self.api_password), headers=headers
 			)
@@ -197,7 +188,7 @@ class LetMeShipUtils:
 			"Access-Control-Allow-Origin": "string",
 		}
 		try:
-			url = f"https://api.letmeship.com/v1/tracking?shipmentid={shipment_id}"
+			url = f"{self.base_url}/tracking?shipmentid={shipment_id}"
 			tracking_data_response = requests.get(url, auth=(self.api_id, self.api_password), headers=headers)
 			tracking_data = json.loads(tracking_data_response.text)
 			if "awbNumber" in tracking_data:
@@ -284,8 +275,7 @@ class LetMeShipUtils:
 
 	def first_30_chars(self, address_title: str):
 		# LetMeShip has a limit of 30 characters for Company field
-		if len(address_title) > 30:
-			return address_title[:30]
+		return address_title[:30] if len(address_title) > 30 else address_title
 
 	def get_service_dict(self, response):
 		"""Returns a dictionary with service info."""
@@ -350,3 +340,16 @@ class LetMeShipUtils:
 			"phone": {"phoneNumber": contact.phone, "phoneNumberPrefix": contact.phone_prefix},
 			"email": contact.email_id,
 		}
+
+
+def get_letmeship_utils() -> "LetMeShipUtils":
+	settings = frappe.get_single("LetMeShip")
+	if not settings.enabled:
+		link = get_link_to_form("LetMeShip", "LetMeShip", frappe.bold("LetMeShip Settings"))
+		frappe.throw(_(f"Please enable LetMeShip Integration in {link}"), title=_("Mandatory"))
+
+	return LetMeShipUtils(
+		base_url=TEST_BASE_URL if settings.use_test_environment else PROD_BASE_URL,
+		api_id=settings.api_id,
+		api_password=settings.get_password("api_password")
+	)
