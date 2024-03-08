@@ -118,8 +118,6 @@ frappe.ui.form.on('Shipment', {
 });
 
 function select_from_available_services(frm, available_services) {
-	var headers = [ __("Service Provider"), __("Parcel Service"), __("Parcel Service Type"), __("Price"), "" ];
-
 	const arranged_services = available_services.reduce((prev, curr) => {
 		if (curr.is_preferred) {
 			prev.preferred_services.push(curr);
@@ -128,14 +126,6 @@ function select_from_available_services(frm, available_services) {
 		}
 		return prev;
 	}, { preferred_services: [], other_services: [] });
-
-	frm.render_available_services = function(dialog, headers, arranged_services){
-		dialog.fields_dict.available_services.$wrapper.html(
-			frappe.render_template('shipment_service_selector',
-				{'header_columns': headers, 'data': arranged_services}
-			)
-		);
-	};
 
 	const dialog = new frappe.ui.Dialog({
 		title: __("Select Service to Create Shipment"),
@@ -153,7 +143,21 @@ function select_from_available_services(frm, available_services) {
 		delivery_notes.push(d.delivery_note);
 	});
 
-	frm.render_available_services(dialog, headers, arranged_services);
+	dialog.fields_dict.available_services.$wrapper.html(
+		frappe.render_template(
+			'shipment_service_selector',
+			{
+				'header_columns': [
+					__("Platform"),
+					__("Carrier"),
+					__("Parcel Service"),
+					__("Price"),
+					""
+				],
+				'data': arranged_services
+			}
+		)
+	);
 
 	dialog.$body.on('click', '.btn', function() {
 		let service_type = $(this).attr("data-type");
