@@ -72,7 +72,7 @@ class LetMeShipUtils:
 				url=url, auth=(self.api_id, self.api_password), headers=headers, data=json.dumps(payload)
 			)
 			response_data = json.loads(response_data.text)
-			if "status" in response_data and response_data["status"]["code"] != 0:
+			if "status" in response_data and response_data["status"]["code"] != "0":
 				frappe.throw(
 					_("An Error occurred while fetching LetMeShip prices:\n{0}").format(
 						json.dumps(response_data["status"], indent=4)
