@@ -124,14 +124,13 @@ class LetMeShipUtils:
 				url=url, auth=(self.api_id, self.api_password), headers=headers, data=json.dumps(payload)
 			)
 			response_data = json.loads(response_data.text)
-			if response_data["status"]["code"] != "0":
-				frappe.throw(
-					_("An Error occurred while creating Shipment: {0}").format(
-						json.dumps(response_data["status"], indent=4)
-					)
+			if "status" in response_data and response_data["status"]["code"] != "0":
+				frappe.throw(_("An Error occurred while fetching LetMeShip prices:\n{0}").format(
+					json.dumps(response_data["status"], indent=4)
 				)
-			else:
-				shipment_amount = response_data["service"]["priceInfo"]["totalPrice"]
+			)
+			if "shipmentId" in response_data:
+				shipment_amount = response_data["service"]["baseServiceDetails"]["priceInfo"]["totalPrice"]
 				awb_number = ""
 				shipment_id = response_data["shipmentId"]
 				url = f"{self.base_url}/shipments/{shipment_id}"
@@ -143,9 +142,9 @@ class LetMeShipUtils:
 							awb_number = parcel["awbNumber"]
 				return {
 					"service_provider": LETMESHIP_PROVIDER,
-					"shipment_id": shipment_id,
-					"carrier": service_info["carrier"],
-					"carrier_service": service_info["service_name"],
+					"shipment_id": response_data["shipmentId"],
+					"carrier": response_data["service"]["baseServiceDetails"]["carrier"],
+					"carrier_service": response_data["service"]["baseServiceDetails"]["name"],
 					"shipment_amount": shipment_amount,
 					"awb_number": awb_number,
 				}
@@ -242,7 +241,7 @@ class LetMeShipUtils:
 					"deliveryTailLift": False,
 					"holidayDelivery": False,
 				},
-				"goodsValue": value_of_goods,
+				"goodsValue": float(value_of_goods),
 				"parcelList": parcel_list,
 				"pickupInterval": {"date": pickup_date},
 			},
