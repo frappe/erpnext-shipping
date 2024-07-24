@@ -14,7 +14,8 @@ from requests.exceptions import HTTPError
 from erpnext_shipping.erpnext_shipping.utils import show_error_alert
 
 SENDCLOUD_PROVIDER = "SendCloud"
-
+WEIGHT_DECIMALS = 3
+CURRENCY_DECIMALS = 2
 
 class SendCloud(Document):
 	pass
@@ -201,8 +202,8 @@ class SendCloudUtils:
 		formatted_parcel = {}
 		formatted_parcel["description"] = description_of_content
 		formatted_parcel["quantity"] = parcel.get("count")
-		formatted_parcel["weight"] = parcel.get("weight")
-		formatted_parcel["value"] = value_of_goods
+		formatted_parcel["weight"] = flt(parcel.get("weight"), WEIGHT_DECIMALS)
+		formatted_parcel["value"] = flt(value_of_goods, CURRENCY_DECIMALS)
 		parcel_list.append(formatted_parcel)
 		return parcel_list
 
@@ -255,7 +256,7 @@ class SendCloudUtils:
 			"shipment": {"id": service_info["service_id"]},
 			"order_number": f"{shipment}-{index}",
 			"external_reference": f"{shipment}-{index}",
-			"weight": parcel.get("weight"),
+			"weight": flt(parcel.get("weight"), WEIGHT_DECIMALS),
 			"parcel_items": self.get_parcel_items(parcel, description_of_content, value_of_goods),
 		}
 
