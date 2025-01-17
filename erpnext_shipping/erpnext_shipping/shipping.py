@@ -50,7 +50,7 @@ def fetch_shipping_rates(
 		if delivery_to_type != "Company":
 			delivery_contact = get_contact(delivery_contact_name)
 		else:
-			delivery_contact = get_company_contact(user=pickup_contact_name)
+			delivery_contact = get_contact(delivery_contact_name)
 			delivery_contact.email_id = delivery_contact.pop("email", None)
 
 		letmeship = get_letmeship_utils()
@@ -120,7 +120,7 @@ def create_shipment(
 	if delivery_to_type != "Company":
 		delivery_contact = get_contact(delivery_contact_name)
 	else:
-		delivery_contact = get_company_contact(user=pickup_contact_name)
+		delivery_contact = get_contact(delivery_contact_name)
 		pickup_contact.email_id = pickup_contact.pop("email", None)
 
 	if service_info["service_provider"] == LETMESHIP_PROVIDER:
