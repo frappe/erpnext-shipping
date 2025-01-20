@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-20 15:47:26.192870",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable",
+  "prefer",
+  "service_provider",
+  "source_country",
+  "company",
+  "reference_url",
+  "authentication_type",
+  "user_key",
+  "user_secret",
+  "api_key",
+  "pickup_location"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enable",
+   "fieldtype": "Check",
+   "label": "Enable"
+  },
+  {
+   "default": "0",
+   "fieldname": "prefer",
+   "fieldtype": "Check",
+   "label": "Prefer"
+  },
+  {
+   "fieldname": "service_provider",
+   "fieldtype": "Link",
+   "label": "Service provider",
+   "options": "Service Provider",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.service_provider",
+   "fieldname": "source_country",
+   "fieldtype": "Link",
+   "label": "Source Country",
+   "options": "Country"
+  },
+  {
+   "depends_on": "eval:doc.service_provider",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "mandatory_depends_on": "eval:doc.service_provider",
+   "options": "Company"
+  },
+  {
+   "depends_on": "eval:doc.service_provider",
+   "fieldname": "reference_url",
+   "fieldtype": "Data",
+   "label": "Reference URL"
+  },
+  {
+   "depends_on": "eval:doc.authentication_type == \"OAuth\"",
+   "fieldname": "user_key",
+   "fieldtype": "Data",
+   "label": "User Key"
+  },
+  {
+   "depends_on": "eval:doc.authentication_type == \"OAuth\"",
+   "fieldname": "user_secret",
+   "fieldtype": "Password",
+   "label": "User Secret"
+  },
+  {
+   "depends_on": "eval:doc.authentication_type == \"API Key\"",
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API key"
+  },
+  {
+   "depends_on": "eval:doc.service_provider",
+   "fieldname": "authentication_type",
+   "fieldtype": "Select",
+   "label": "Authentication Type",
+   "options": "\nOAuth\nAPI Key",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.authentication_type",
+   "fieldname": "pickup_location",
+   "fieldtype": "Table",
+   "label": "Pickup Location",
+   "options": "Pickup Location"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-20 17:34:58.420952",
+ "modified_by": "Administrator",
+ "module": "ERPNext Shipping",
+ "name": "Shipping Provider",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
