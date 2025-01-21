@@ -14,6 +14,8 @@ from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
 	match_parcel_service_type_carrier,
+	validate_parcels,
+	validate_phone
 )
 
 
@@ -38,6 +40,8 @@ def fetch_shipping_rates(
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
 
+	validate_parcels(parcels)
+
 	if letmeship_enabled:
 		pickup_contact = None
 		delivery_contact = None
@@ -46,8 +50,12 @@ def fetch_shipping_rates(
 		else:
 			pickup_contact = get_company_contact(user=pickup_contact_name)
 			pickup_contact.email_id = pickup_contact.pop("email", None)
+			phone = pickup_contact.get("phone")
+			validate_phone(phone)
 
 		delivery_contact = get_contact(delivery_contact_name)
+
+		
 
 		letmeship = get_letmeship_utils()
 		letmeship_prices = (
@@ -84,7 +92,7 @@ def create_shipment(
 	shipment,
 	pickup_from_type,
 	delivery_to_type,
-	pickup_address_name,
+	pickup_address_name, 
 	delivery_address_name,
 	shipment_parcel,
 	description_of_content,
@@ -113,7 +121,7 @@ def create_shipment(
 	else:
 		pickup_contact = get_company_contact(user=pickup_contact_name)
 		pickup_contact.email_id = pickup_contact.pop("email", None)
-		
+
 	delivery_contact = get_contact(delivery_contact_name)
 
 	if service_info["service_provider"] == LETMESHIP_PROVIDER:
