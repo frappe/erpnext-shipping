@@ -29,8 +29,14 @@ def generate_token(doc):
 
 
 @frappe.whitelist()
-def get_shiprocket_shippments():
-	pass
+def get_shipping_address(bearer):
+	url = "https://apiv2.shiprocket.in/v1/external/settings/company/pickup"
+
+	headers = {"Content-Type": "application/json", "Authorization": f"Bearer {bearer}"}
+
+	response = requests.request("GET", url, headers=headers)
+
+	print(response.text)
 
 
 def get_available_services(token, parcels, delivery_address_name, pickup_address_name, total_weight=None):
