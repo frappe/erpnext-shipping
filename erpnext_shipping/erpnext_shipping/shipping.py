@@ -5,6 +5,7 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
+from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import DelhiveryOneUtils
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
 	get_letmeship_utils,
@@ -34,6 +35,7 @@ def fetch_shipping_rates(
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
+	delhivery_one_enabled = frappe.db.get_value("Shipping Provider", "c0jp3n9u1g", "enable")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -78,6 +80,15 @@ def fetch_shipping_rates(
 		)
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
+
+	if delhivery_one_enabled and pickup_from_type == "Company":
+		delhivery = DelhiveryOneUtils()
+		delhivery_prices = (
+			delhivery.get_available_services(
+				delivery_address=delivery_address, pickup_address=pickup_address, weight=1000
+			)
+			or []
+		)
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
