@@ -10,6 +10,11 @@ from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	get_letmeship_utils,
 )
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
+from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
+	SHIPROCKET_PROVIDER,
+	create_shiprocket_shipment,
+	get_available_services,
+)
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
@@ -29,6 +34,7 @@ def fetch_shipping_rates(
 	value_of_goods,
 	pickup_contact_name=None,
 	delivery_contact_name=None,
+	pickup_company=None,
 ):
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
@@ -38,6 +44,17 @@ def fetch_shipping_rates(
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
 
+	if pickup_company:
+		shipping_providers = frappe.get_list(
+			"Shipping Provider",
+			filters={"service_provider": "Shiprocket", "company": pickup_company, "enable": True},
+			pluck="barer_key",
+		)
+		shiprocket_prices = get_available_services(
+			shipping_providers[0], parcels, delivery_address_name, pickup_address_name
+		)
+		shiprocket_prices = match_parcel_service_type_carrier(shiprocket_prices, "carrier", "service_name")
+		shipment_prices += shiprocket_prices
 	if letmeship_enabled:
 		pickup_contact = None
 		delivery_contact = None
@@ -147,6 +164,23 @@ def create_shipment(
 			shipment_parcel=shipment_parcel,
 			description_of_content=description_of_content,
 			value_of_goods=value_of_goods,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+		)
+
+	if service_info["service_provider"] == SHIPROCKET_PROVIDER:
+		shipment = frappe.get_doc("Shipment", shipment)
+		create_shiprocket_shipment(
+			shipment=shipment,
+			token=service_info.get("token"),
+			pickup_address=pickup_address,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			pickup_date=pickup_date,
+			value_of_goods=value_of_goods,
+			pickup_contact=pickup_contact,
 			delivery_contact=delivery_contact,
 			service_info=service_info,
 		)
