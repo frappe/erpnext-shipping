@@ -24,3 +24,10 @@ def generate_token(doc):
 
 	except requests.exceptions.RequestException as e:
 		frappe.log_error(title="Shiprocket Authentication Error", message=str(e))
+
+
+
+@frappe.whitelist()
+def calculate_total_weight(shipment_parcel):
+	total_weight = sum([parcels.get("weight",0) for parcels in shipment_parcel])
+	return total_weight

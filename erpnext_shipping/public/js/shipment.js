@@ -114,7 +114,7 @@ frappe.ui.form.on("Shipment", {
 			},
 		});
 	},
-
+	
 	update_tracking: function (frm, service_provider, shipment_id) {
 		let delivery_notes = [];
 		(frm.doc.shipment_delivery_note || []).forEach((d) => {
@@ -229,3 +229,19 @@ function select_from_available_services(frm, available_services) {
 	};
 	dialog.show();
 }
+
+
+frappe.ui.form.on('Shipment Parcel', {
+	weight: function (frm, cdt, cdn){
+		let row = frappe.get_doc(cdt, cdn);
+		if (row.weight) {
+			let net_total_weight = 0;
+			frm.doc.shipment_parcel.forEach(function (item) {
+				net_total_weight += item.weight || 0;
+			});
+
+			frm.set_value('net_total_weight', net_total_weight);
+			console.log(net_total_weight)
+		}
+	} 
+});
