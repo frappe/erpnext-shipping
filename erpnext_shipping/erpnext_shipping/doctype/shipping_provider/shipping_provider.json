@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:{service_provider}-{company}-{####}",
  "creation": "2025-01-20 15:47:26.192870",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -103,10 +104,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-21 10:39:01.316933",
+ "modified": "2025-01-21 12:13:00.226898",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Shipping Provider",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

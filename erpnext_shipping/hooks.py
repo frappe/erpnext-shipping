@@ -195,5 +195,14 @@ shipping_custom_fields = {
 			"translatable": 0,
 			"insert_after": "tracking_status",
 		},
-	]
+	],
+	"Shipment": [
+		{
+			"fieldname": "net_total_weight",
+			"label": "Total weight",
+			"fieldtype": "Float",
+			"insert_after": "shipment_parcel",
+			"read_only": 1,
+		},
+	],
 }
