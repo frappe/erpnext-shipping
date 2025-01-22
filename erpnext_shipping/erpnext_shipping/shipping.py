@@ -5,6 +5,10 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
+from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import (
+	DELHIVERY_PROVIDER,
+	DelhiveryOneUtils,
+)
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
 	get_letmeship_utils,
@@ -13,14 +17,14 @@ from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCL
 from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
 	SHIPROCKET_PROVIDER,
 	create_shiprocket_shipment,
-	get_available_services,
 	generate_lable,
+	get_available_services,
 	track_order,
 )
-from erpnext_shipping.erpnext_shipping.utils import ( get_shipping_provider )
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
+	get_shipping_provider,
 	match_parcel_service_type_carrier,
 )
 
@@ -44,6 +48,7 @@ def fetch_shipping_rates(
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
+	delhivery_one_enabled = frappe.db.get_value("Shipping Provider", "c0jp3n9u1g", "enable")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -52,9 +57,15 @@ def fetch_shipping_rates(
 		shipping_providers = get_shipping_provider(pickup_company, "Shiprocket")
 		if shipping_providers:
 			shiprocket_prices = get_available_services(
-				shipping_providers['barer_key'], parcels, delivery_address_name, pickup_address_name, total_weight
+				shipping_providers["barer_key"],
+				parcels,
+				delivery_address_name,
+				pickup_address_name,
+				total_weight,
 			)
-			shiprocket_prices = match_parcel_service_type_carrier(shiprocket_prices, "carrier", "service_name")
+			shiprocket_prices = match_parcel_service_type_carrier(
+				shiprocket_prices, "carrier", "service_name"
+			)
 			shipment_prices += shiprocket_prices
 	if letmeship_enabled:
 		pickup_contact = None
@@ -97,6 +108,17 @@ def fetch_shipping_rates(
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
 
+	if delhivery_one_enabled and pickup_from_type == "Company":
+		delhivery = DelhiveryOneUtils()
+		delhivery_prices = (
+			delhivery.get_available_services(
+				delivery_address=delivery_address, pickup_address=pickup_address, weight=1000
+			)
+			or []
+		)
+		delhivery_prices = match_parcel_service_type_carrier(delhivery_prices, "carrier", "service_name")
+		shipment_prices += delhivery_prices
+
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
 
@@ -119,7 +141,7 @@ def create_shipment(
 	pickup_contact_name=None,
 	delivery_contact_name=None,
 	delivery_notes=None,
-	pickup_company=None,	
+	pickup_company=None,
 ):
 	# Create Shipment for the selected provider
 	if delivery_notes is None:
@@ -161,6 +183,18 @@ def create_shipment(
 	if service_info["service_provider"] == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		shipment_info = sendcloud.create_shipment(
+			shipment=shipment,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			value_of_goods=value_of_goods,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+		)
+	if service_info["service_provider"] == DELHIVERY_PROVIDER:
+		delhivery = DelhiveryOneUtils()
+		shipment_info = delhivery.create_shipment(
 			shipment=shipment,
 			delivery_company_name=delivery_company_name,
 			delivery_address=delivery_address,
@@ -225,6 +259,7 @@ def print_shipping_label(shipment: str):
 	shipment_doc = frappe.get_doc("Shipment", shipment)
 	service_provider = shipment_doc.service_provider
 	shipment_id = shipment_doc.shipment_id
+	shipping_label = None
 
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = get_letmeship_utils()
@@ -241,6 +276,10 @@ def print_shipping_label(shipment: str):
 		shipping_label = []
 		file_url = generate_lable(shipment)
 		shipping_label.append(file_url)
+	elif service_provider == DELHIVERY_PROVIDER:
+		delhivery = DelhiveryOneUtils()
+		shipping_label = delhivery.get_label(shipment_id)
+
 	return shipping_label
 
 
@@ -275,6 +314,9 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == SHIPROCKET_PROVIDER:
 		tracking_data = track_order(shipment, shipment_id)
 
+	elif service_provider == DELHIVERY_PROVIDER:
+		delhivery = DelhiveryOneUtils()
+		tracking_data = delhivery.get_tracking_data(shipment_id)
 	if not tracking_data:
 		return
 
