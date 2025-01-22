@@ -137,6 +137,8 @@ frappe.ui.form.on("Shipment", {
 			},
 		});
 	},
+
+	
 });
 
 function select_from_available_services(frm, available_services) {
@@ -231,17 +233,35 @@ function select_from_available_services(frm, available_services) {
 }
 
 
-frappe.ui.form.on('Shipment Parcel', {
-	weight: function (frm, cdt, cdn){
-		let row = frappe.get_doc(cdt, cdn);
-		if (row.weight) {
-			let net_total_weight = 0;
-			frm.doc.shipment_parcel.forEach(function (item) {
-				net_total_weight += item.weight || 0;
-			});
+// frappe.ui.form.on('Shipment Parcel', {
+// 	weight: function (frm, cdt, cdn){
+// 		let row = frappe.get_doc(cdt, cdn);
+// 		if (row.weight) {
+// 			let net_total_weight = 0;
+// 			let parcel_template = frm.doc.parcel_template ;
+// 			(frm.doc.shipment_parcel || []).forEach(function (item) {
+// 				net_total_weight += item.weight|| 0;
+// 				net_total_weight += parcel_template
+// 			});
 
-			frm.set_value('net_total_weight', net_total_weight);
-			console.log(net_total_weight)
-		}
-	} 
+// 			frm.set_value('net_total_weight', net_total_weight);
+// 		}
+// 	} 
+// });
+
+
+frappe.ui.form.on('Shipment', {
+    validate: function (frm) {
+        frappe.call({
+            method: 'erpnext_shipping.erpnext_shipping.shiprocket.shiprocket.calculate_total_weight',
+            args: {
+                shipment_parcel: frm.doc.shipment_parcel
+            },
+            callback: function (r) {
+                if (r.message) {
+                    frm.set_value('net_total_weight', r.message);
+                }
+            }
+        });
+    }
 });
