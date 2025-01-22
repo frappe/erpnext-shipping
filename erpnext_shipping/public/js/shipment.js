@@ -70,6 +70,7 @@ frappe.ui.form.on("Shipment", {
 					delivery_contact_name: frm.doc.delivery_contact_name,
 					value_of_goods: frm.doc.value_of_goods,
 					pickup_company: frm.doc.pickup_company,
+					total_weight: frm.doc.net_total_weight
 				},
 				callback: function (r) {
 					if (r.message && r.message.length) {
@@ -206,6 +207,8 @@ function select_from_available_services(frm, available_services) {
 				value_of_goods: frm.doc.value_of_goods,
 				service_data: service_data,
 				delivery_notes: delivery_notes,
+				pickup_company: frm.doc.pickup_company,
+				total_weight: frm.doc.net_total_weight,
 			},
 			callback: function (r) {
 				if (!r.exc) {

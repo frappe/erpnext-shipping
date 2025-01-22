@@ -204,5 +204,12 @@ shipping_custom_fields = {
 			"insert_after": "shipment_parcel",
 			"read_only": 1,
 		},
+		{
+			"fieldname": "waybill",
+			"label": "Waybill",
+			"fieldtype": "Data",
+			"insert_after": "description_of_content",
+			"read_only": 1,
+		},
 	],
 }
