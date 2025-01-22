@@ -260,7 +260,8 @@ def create_shiprocket_shipment(
 
 @frappe.whitelist()
 def calculate_total_weight(shipment_parcel):
-	total_weight = sum(parcels.get("weight", 0) for parcels in shipment_parcel)
+	shipment_parcel = json.loads(shipment_parcel)
+	total_weight = sum([parcels.get("weight",0) for parcels in shipment_parcel])
 	return total_weight
 
 @frappe.whitelist()
