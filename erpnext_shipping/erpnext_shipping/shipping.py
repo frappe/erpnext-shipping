@@ -5,7 +5,10 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
-from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import DelhiveryOneUtils
+from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import (
+	DELHIVERY_PROVIDER,
+	DelhiveryOneUtils,
+)
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
 	get_letmeship_utils,
@@ -89,6 +92,8 @@ def fetch_shipping_rates(
 			)
 			or []
 		)
+		delhivery_prices = match_parcel_service_type_carrier(delhivery_prices, "carrier", "service_name")
+		shipment_prices += delhivery_prices
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
@@ -161,6 +166,18 @@ def create_shipment(
 			delivery_contact=delivery_contact,
 			service_info=service_info,
 		)
+	if service_info["service_provider"] == DELHIVERY_PROVIDER:
+		delhivery = DelhiveryOneUtils()
+		shipment_info = delhivery.create_shipment(
+			shipment=shipment,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			value_of_goods=value_of_goods,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+		)
 
 	if shipment_info:
 		shipment = frappe.get_doc("Shipment", shipment)
@@ -199,6 +216,7 @@ def print_shipping_label(shipment: str):
 	shipment_doc = frappe.get_doc("Shipment", shipment)
 	service_provider = shipment_doc.service_provider
 	shipment_id = shipment_doc.shipment_id
+	shipping_label = None
 
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = get_letmeship_utils()
@@ -211,6 +229,9 @@ def print_shipping_label(shipment: str):
 			content = sendcloud.download_label(label_url)
 			file_url = save_label_as_attachment(shipment, content)
 			shipping_label.append(file_url)
+	elif service_provider == DELHIVERY_PROVIDER:
+		delhivery = DelhiveryOneUtils()
+		shipping_label = delhivery.get_label(shipment_id)
 
 	return shipping_label
 
@@ -243,7 +264,9 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
-
+	elif service_provider == DELHIVERY_PROVIDER:
+		delhivery = DelhiveryOneUtils()
+		tracking_data = delhivery.get_tracking_data(shipment_id)
 	if not tracking_data:
 		return
 
