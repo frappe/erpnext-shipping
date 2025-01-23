@@ -38,12 +38,11 @@ class DelhiveryOneUtils:
 		except Exception:
 			show_error_alert("fetching Delhivery availability")
 
-	def get_available_services(self, delivery_address, pickup_address, weight=1000):
+	def get_available_services(self, delivery_address, pickup_address, weight=10):
 		if not self.enable and not self.api_key:
 			return []
-		self.get_waybill()
 		pickup_code = pickup_address.pincode
-		delhivery_code = pickup_address.pincode
+		delhivery_code = delivery_address.pincode
 		if not self.get_availability(pickup_code):
 			return []
 		headers = {"Content-Type": "application/json", "Authorization": f"Token {self.api_key}"}
@@ -56,9 +55,9 @@ class DelhiveryOneUtils:
 			params = {
 				"md": mode,
 				"ss": "Delivered",
-				"d_pin": pickup_code,
-				"o_pin": 201016,
-				"cgm": weight,
+				"d_pin": delhivery_code,
+				"o_pin": pickup_code,
+				"cgm": weight * 1000,
 			}
 
 			try:
@@ -75,20 +74,6 @@ class DelhiveryOneUtils:
 			available_services.append(available_service)
 		return available_services
 
-	def get_waybill(self):
-		headers = {"Content-Type": "application/json"}
-
-		url = "https://track.delhivery.com/waybill/api/bulk/json/"
-		params = {"token": self.api_key, "count": 1}
-
-		try:
-			response = requests.get(url, headers=headers, params=params)
-
-			if response.status_code == 200:
-				return response.text
-		except Exception:
-			show_error_alert("fetching waybill")
-
 	def create_shipment(
 		self,
 		shipment,
@@ -99,6 +84,8 @@ class DelhiveryOneUtils:
 		value_of_goods,
 		delivery_contact,
 		service_info,
+		pickup_address,
+		pickup_address_name,
 	):
 		headers = {
 			"Authorization": f"Token {self.api_key}",
@@ -119,64 +106,81 @@ class DelhiveryOneUtils:
 				value_of_goods,
 			)
 			shipments.append(parcel_data)
+		pickup_phone = frappe.db.get_value("Address", pickup_address_name, "phone")
 		payload = {
-			"format": "json",
 			"data": {
 				"pickup_location": {
-					"add": delivery_address.address_line1,
-					"country": delivery_address.country_code,
-					"pin": delivery_address.pincode,
-					"phone": delivery_contact.phone,
-					"city": delivery_address.city,
-					"name": delivery_company_name or delivery_address.address_title,
-					"state": delivery_address.state,
+					"add": pickup_address.address_title,
+					"country": pickup_address.country_code.upper(),
+					"pin": pickup_address.pincode,
+					"phone": pickup_phone,
+					"city": pickup_address.city,
+					"name": pickup_address_name,
 				},
 				"shipments": shipments,
 			},
 		}
-
+		json_data = json.dumps(payload["data"])
+		formatted_payload = f"format=json&data={json_data}"
 		try:
-			response = requests.post(url, headers=headers, json=payload)
-
+			response = requests.post(url, headers=headers, data=formatted_payload)
+			shipment = response.json()
 			if response.status_code == 200:
-				return
-				# return {
-				# 	"service_provider": "Delhivery",
-				# 	"shipment_id": 1234,
-				# 	"carrier": "Delhivery",
-				# 	"carrier_service": "Surface",
-				# 	"shipment_amount": 100,
-				# 	"awb_number": 12345,
-				# }
+				awb = []
+				for i in shipment["packages"]:
+					awb.append(i["waybill"])
+				return {
+					"service_provider": "Delhivery",
+					"shipment_id": ", ".join(awb),
+					"carrier": "Delhivery",
+					"carrier_service": service_info.get("service_name"),
+					"shipment_amount": shipment["cod_amount"],
+					"awb_number": ", ".join(awb),
+				}
 		except Exception:
 			show_error_alert("creating Delhivery Shipment")
 
 	def get_label(self, shipment_id):
 		headers = {"Authorization": f"Token {self.api_key}", "Content-Type": "application/json"}
 		url = "https://track.delhivery.com/api/p/packing_slip"
-		params = {"wbns": shipment_id, "pdf": "true"}
+		shipments = shipment_id.split(" ,")
+		label_urls = []
 		try:
-			response = requests.get(url, headers=headers, params=params)
-			if response.status_code == 200:
-				return []
+			for ship_id in shipments:
+				params = {"wbns": ship_id, "pdf": "true"}
+				response = requests.get(url, headers=headers, params=params)
+				if response.status_code == 200:
+					shipment_label = json.loads(response.text)
+					if shipment_label["packages"]:
+						label_urls.append(shipment_label["packages"][0]["pdf_download_link"])
+			if len(label_urls):
+				return label_urls
 		except Exception:
 			show_error_alert("printing Delhivery Label")
 
 	def get_tracking_data(self, shipment_id):
 		headers = {"Content-Type": "application/json"}
 		url = "https://track.delhivery.com/api/v1/packages/json"
-		params = {"token": self.api_key, "waybill": self.get_waybill()}
+		shipment_id_list = shipment_id.split(", ")
 		try:
-			response = requests.get(url, headers=headers, params=params)
-			if response.status_code == 200:
-				tracking_data = response.json()
-				return tracking_data
-				# return {
-				# 	"awb_number": ", ".join(awb_number),
-				# 	"tracking_status": ", ".join(tracking_status),
-				# 	"tracking_status_info": ", ".join(tracking_status_info),
-				# 	"tracking_url": ", ".join(tracking_urls),
-				# }
+			awb_number, tracking_status, tracking_status_info = [], [], []
+			for ship_id in shipment_id_list:
+				params = {"token": self.api_key, "waybill": ship_id}
+				response = requests.get(url, headers=headers, params=params)
+				if response.status_code == 200:
+					tracking_data = json.loads(response.text)
+					if "ShipmentData" in tracking_data and tracking_data["ShipmentData"]:
+						shipment = tracking_data["ShipmentData"][0]["Shipment"]
+
+						awb_number.append(shipment.get("AWB", "N/A"))
+						tracking_status.append(shipment["Status"]["Status"])
+						tracking_status_info.append(shipment["Status"]["Instructions"])
+			return {
+				"awb_number": ", ".join(awb_number),
+				"tracking_status": ", ".join(tracking_status),
+				"tracking_status_info": ", ".join(tracking_status_info),
+				"tracking_url": "",
+			}
 		except Exception:
 			show_error_alert("updating Delhivery Shipment")
 
@@ -208,7 +212,7 @@ class DelhiveryOneUtils:
 	):
 		return {
 			"name": f"{delivery_contact.first_name} {delivery_contact.last_name}",
-			"country": delivery_address.country_code,
+			"country": delivery_address.country,
 			"city": delivery_address.city,
 			"add": delivery_address.address_line1,
 			"pin": delivery_address.pincode,
@@ -217,4 +221,8 @@ class DelhiveryOneUtils:
 			"cod_amount": 0,
 			"quantity": parcel.get("count"),
 			"order": f"{shipment}-{index}",
+			"shipment_width": parcel.get("width"),
+			"shipment_height": parcel.get("height"),
+			"weight": parcel.get("weight"),
+			"shipping_mode": service_info.get("service_name"),
 		}
