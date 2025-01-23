@@ -127,17 +127,26 @@ def update_tracking_info_daily():
 			for field in fields:
 				shipment_doc.db_set(field, tracking_info.get(field))
 
-def get_shipping_provider(company, provider):
-    docs = frappe.db.get_value("Shipping Provider",  {"company": company, "enable" : 1, "service_provider":provider}, ["*"], as_dict=True)
-    return docs
 
-def get_pickup_location(company, provider, key = None):
-    doc = get_shipping_provider(company, provider)
-    result = {}
-    if doc:
-        pickup_doc = frappe.db.get_value("Pickup Location", {"parenttype" : "Shipping Provider", "parent": doc['name'], "company" : company}, "location")
-        if not key:
-            return pickup_doc
-        result["pickup_id"] = pickup_doc
-        result["bearer_key"] = doc['barer_key']
-        return result
+def get_shipping_provider(company, provider):
+	docs = frappe.db.get_value(
+		"Shipping Provider",
+		{"company": company, "enable": 1, "service_provider": provider},
+		["*"],
+		as_dict=True,
+	)
+	return docs
+
+
+def get_pickup_location(
+	company,
+	provider,
+):
+	doc = get_shipping_provider(company, provider)
+	if doc:
+		pickup_doc = frappe.db.get_value(
+			"Pickup Location",
+			{"parenttype": "Shipping Provider", "parent": doc["name"], "company": company},
+			"location",
+		)
+		return pickup_doc

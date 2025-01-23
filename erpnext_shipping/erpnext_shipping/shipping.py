@@ -16,10 +16,7 @@ from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
 from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
 	SHIPROCKET_PROVIDER,
-	create_shiprocket_shipment,
-	generate_lable,
-	get_available_services,
-	track_order,
+	ShiprocketUtils,
 )
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
@@ -56,8 +53,8 @@ def fetch_shipping_rates(
 	if pickup_company:
 		shipping_providers = get_shipping_provider(pickup_company, "Shiprocket")
 		if shipping_providers:
-			shiprocket_prices = get_available_services(
-				shipping_providers["barer_key"],
+			shiprocket = ShiprocketUtils(company=pickup_company)
+			shiprocket_prices = shiprocket.get_available_services(
 				parcels,
 				delivery_address_name,
 				pickup_address_name,
@@ -206,9 +203,9 @@ def create_shipment(
 		)
 
 	if service_info["service_provider"] == SHIPROCKET_PROVIDER:
-		shipment_info = create_shiprocket_shipment(
+		shiprocket = ShiprocketUtils(company=pickup_company)
+		shipment_info = shiprocket.create_shiprocket_shipment(
 			shipment=shipment,
-			token=service_info.get("token"),
 			delivery_company_name=delivery_company_name,
 			delivery_address=delivery_address,
 			shipment_parcel=shipment_parcel,
@@ -260,6 +257,7 @@ def print_shipping_label(shipment: str):
 	service_provider = shipment_doc.service_provider
 	shipment_id = shipment_doc.shipment_id
 	shipping_label = None
+	pickup_company = shipment_doc.pickup_company
 
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = get_letmeship_utils()
@@ -274,7 +272,8 @@ def print_shipping_label(shipment: str):
 			shipping_label.append(file_url)
 	elif service_provider == SHIPROCKET_PROVIDER:
 		shipping_label = []
-		file_url = generate_lable(shipment)
+		shiprocket = ShiprocketUtils(company=pickup_company)
+		file_url = shiprocket.generate_lable(shipment_id)
 		shipping_label.append(file_url)
 	elif service_provider == DELHIVERY_PROVIDER:
 		delhivery = DelhiveryOneUtils()
@@ -303,6 +302,9 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	if delivery_notes is None:
 		delivery_notes = []
 
+	shipment_doc = frappe.get_doc("Shipment", shipment)
+	pickup_company = shipment_doc.pickup_company
+
 	# Update Tracking info in Shipment
 	tracking_data = None
 	if service_provider == LETMESHIP_PROVIDER:
@@ -312,7 +314,8 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 		sendcloud = SendCloudUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
 	elif service_provider == SHIPROCKET_PROVIDER:
-		tracking_data = track_order(shipment, shipment_id)
+		shiprocket = ShiprocketUtils(company=pickup_company)
+		tracking_data = shiprocket.track_order(shipment_id)
 
 	elif service_provider == DELHIVERY_PROVIDER:
 		delhivery = DelhiveryOneUtils()
