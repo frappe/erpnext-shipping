@@ -5,6 +5,7 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
+from erpnext_shipping.erpnext_shipping.aramex.aramex import AramexUtils
 from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import (
 	DELHIVERY_PROVIDER,
 	DelhiveryOneUtils,
@@ -39,6 +40,7 @@ def fetch_shipping_rates(
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
 	delhivery_one_enabled = frappe.db.get_value("Shipping Provider", "c0jp3n9u1g", "enable")
+	aramex_enabled = frappe.db.get_value("Shipping Provider", "7s5mnr0hbc", "enable")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -88,7 +90,7 @@ def fetch_shipping_rates(
 		delhivery = DelhiveryOneUtils()
 		delhivery_prices = (
 			delhivery.get_available_services(
-				delivery_address=delivery_address, pickup_address=pickup_address, weight=1000
+				delivery_address=delivery_address, pickup_address=pickup_address, weight=10
 			)
 			or []
 		)
@@ -177,6 +179,8 @@ def create_shipment(
 			value_of_goods=value_of_goods,
 			delivery_contact=delivery_contact,
 			service_info=service_info,
+			pickup_address=pickup_address,
+			pickup_address_name=pickup_address_name,
 		)
 
 	if shipment_info:
@@ -239,7 +243,6 @@ def print_shipping_label(shipment: str):
 def save_label_as_attachment(shipment: str, content: bytes) -> str:
 	"""Store label as attachment to Shipment and return the URL."""
 	attachment = frappe.new_doc("File")
-
 	attachment.file_name = f"label_{shipment}.pdf"
 	attachment.content = content
 	attachment.folder = "Home/Attachments"
