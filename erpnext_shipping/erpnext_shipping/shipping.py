@@ -22,7 +22,6 @@ from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
-	get_shipping_provider,
 	match_parcel_service_type_carrier,
 )
 
@@ -53,19 +52,15 @@ def fetch_shipping_rates(
 	parcels = json.loads(parcels)
 
 	if pickup_company:
-		shipping_providers = get_shipping_provider(pickup_company, "Shiprocket")
-		if shipping_providers:
-			shiprocket = ShiprocketUtils(company=pickup_company)
-			shiprocket_prices = shiprocket.get_available_services(
-				parcels,
-				delivery_address_name,
-				pickup_address_name,
-				total_weight,
-			)
-			shiprocket_prices = match_parcel_service_type_carrier(
-				shiprocket_prices, "carrier", "service_name"
-			)
-			shipment_prices += shiprocket_prices
+		shiprocket = ShiprocketUtils(company=pickup_company)
+		shiprocket_prices = shiprocket.get_available_services(
+			parcels,
+			delivery_address_name,
+			pickup_address_name,
+			total_weight,
+		)
+		shiprocket_prices = match_parcel_service_type_carrier(shiprocket_prices, "carrier", "service_name")
+		shipment_prices += shiprocket_prices
 	if letmeship_enabled:
 		pickup_contact = None
 		delivery_contact = None
@@ -108,10 +103,10 @@ def fetch_shipping_rates(
 		shipment_prices += sendcloud_prices
 
 	if delhivery_one_enabled and pickup_from_type == "Company":
-		delhivery = DelhiveryOneUtils()
+		delhivery = DelhiveryOneUtils(company=pickup_company)
 		delhivery_prices = (
 			delhivery.get_available_services(
-				delivery_address=delivery_address, pickup_address=pickup_address, weight=10
+				delivery_address=delivery_address, pickup_address=pickup_address, weight=total_weight
 			)
 			or []
 		)
@@ -192,7 +187,7 @@ def create_shipment(
 			service_info=service_info,
 		)
 	if service_info["service_provider"] == DELHIVERY_PROVIDER:
-		delhivery = DelhiveryOneUtils()
+		delhivery = DelhiveryOneUtils(company=pickup_company)
 		shipment_info = delhivery.create_shipment(
 			shipment=shipment,
 			delivery_company_name=delivery_company_name,
@@ -280,7 +275,7 @@ def print_shipping_label(shipment: str):
 		file_url = shiprocket.generate_lable(shipment_id)
 		shipping_label.append(file_url)
 	elif service_provider == DELHIVERY_PROVIDER:
-		delhivery = DelhiveryOneUtils()
+		delhivery = DelhiveryOneUtils(company=pickup_company)
 		shipping_label = delhivery.get_label(shipment_id)
 
 	return shipping_label

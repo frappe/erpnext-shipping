@@ -4,6 +4,14 @@ import frappe
 from frappe import _
 from frappe.utils.data import get_link_to_form
 
+SERVICE_PROVIDERS = [
+	"Shiprocket",
+	"Delhiveryone",
+	"Shipstation",
+	"Aramex",
+	"Fedex",
+]
+
 
 def get_tracking_url(carrier, tracking_number):
 	# Return the formatted Tracking URL.

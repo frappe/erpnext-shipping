@@ -5,14 +5,14 @@ import requests
 from frappe import _
 from requests.exceptions import HTTPError
 
-from erpnext_shipping.erpnext_shipping.utils import show_error_alert
+from erpnext_shipping.erpnext_shipping.utils import get_shipping_provider, show_error_alert
 
 DELHIVERY_PROVIDER = "Delhivery"
 
 
 class DelhiveryOneUtils:
-	def __init__(self):
-		settings = frappe.get_doc("Shipping Provider", "c0jp3n9u1g")
+	def __init__(self, company):
+		settings = get_shipping_provider(company, "Delhiveryone")
 		self.service_provider = settings.service_provider
 		self.company = settings.company
 		self.api_key = settings.get_password("api_key")
@@ -38,7 +38,7 @@ class DelhiveryOneUtils:
 		except Exception:
 			show_error_alert("fetching Delhivery availability")
 
-	def get_available_services(self, delivery_address, pickup_address, weight=10):
+	def get_available_services(self, delivery_address, pickup_address, weight):
 		if not self.enable and not self.api_key:
 			return []
 		pickup_code = pickup_address.pincode
