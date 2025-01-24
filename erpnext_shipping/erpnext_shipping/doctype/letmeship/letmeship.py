@@ -85,7 +85,7 @@ class LetMeShipUtils:
 			if "serviceList" in response_data and response_data["serviceList"]:
 				available_services = []
 				for response in response_data["serviceList"]:
-					if not self.check_weight(response):
+					if self.check_weight(response):
 						continue
 					
 					available_service = self.get_service_dict(response)
@@ -327,7 +327,7 @@ class LetMeShipUtils:
 		}
 	def check_weight(self, service_response):
 		messages = service_response.get("messages", [])
-		return not any("maximum weight" in message.lower() for message in messages)
+		return  any("maximum weight" in message.lower() for message in messages)
 
 def get_letmeship_utils() -> "LetMeShipUtils":
 	settings = frappe.get_single("LetMeShip")
