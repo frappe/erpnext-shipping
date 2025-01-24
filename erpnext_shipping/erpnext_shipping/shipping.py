@@ -113,7 +113,7 @@ def create_shipment(
 	else:
 		pickup_contact = get_company_contact(user=pickup_contact_name)
 		pickup_contact.email_id = pickup_contact.pop("email", None)
-		
+
 	delivery_contact = get_contact(delivery_contact_name)
 
 	if service_info["service_provider"] == LETMESHIP_PROVIDER:
