@@ -4,13 +4,14 @@
 import frappe
 from frappe.model.document import Document
 
-from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import generate_token
+# from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import generate_token
 
 
 class ShippingProvider(Document):
-	def validate(self):
-		if self.service_provider == "Shiprocket":
-			try:
-				generate_token(self)
-			except Exception as e:
-				frappe.log_error(title="Error generating token", message=str(e))
+	pass
+	# def validate(self):
+	# 	if self.service_provider == "Shiprocket":
+	# 		try:
+	# 			generate_token(self)
+	# 		except Exception as e:
+	# 			frappe.log_error(title="Error generating token", message=str(e))

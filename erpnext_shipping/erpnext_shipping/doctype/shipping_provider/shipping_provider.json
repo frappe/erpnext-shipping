@@ -36,9 +36,9 @@
   },
   {
    "fieldname": "service_provider",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
    "label": "Service provider",
-   "options": "Service Provider",
+   "options": "\nShiprocket\nShipstation\nDelhiveryone\nAramex\nFedex",
    "reqd": 1
   },
   {
@@ -120,7 +120,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-22 16:08:40.994814",
+ "modified": "2025-01-23 17:54:36.637959",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Shipping Provider",

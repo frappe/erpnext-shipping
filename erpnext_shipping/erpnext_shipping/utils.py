@@ -158,3 +158,15 @@ def get_pickup_location(
 			"location",
 		)
 		return pickup_doc
+
+
+def remove_bearer_key():
+	docs = frappe.get_all("Shipping Provider", filters={"enable": 1}, pluck="name")
+	for doc in docs:
+		remove_field_value("Shipping Provider", doc, "barer_key")
+
+
+def remove_field_value(doctype, docname, fieldname):
+	doc = frappe.get_doc(doctype, docname)
+	doc.set(fieldname, None)
+	doc.save()

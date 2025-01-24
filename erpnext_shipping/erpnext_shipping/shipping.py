@@ -5,7 +5,6 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
-from erpnext_shipping.erpnext_shipping.aramex.aramex import AramexUtils
 from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import (
 	DELHIVERY_PROVIDER,
 	DelhiveryOneUtils,
@@ -22,6 +21,7 @@ from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
+	get_shipping_provider,
 	match_parcel_service_type_carrier,
 )
 
@@ -45,13 +45,13 @@ def fetch_shipping_rates(
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
-	delhivery_one_enabled = frappe.db.get_value("Shipping Provider", "c0jp3n9u1g", "enable")
-	aramex_enabled = frappe.db.get_value("Shipping Provider", "7s5mnr0hbc", "enable")
+	delhivery_one_enabled = get_shipping_provider(pickup_company, "Delhiveryone")
+	shiprocket_enabled = get_shipping_provider(pickup_company, "Shiprocket")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
 
-	if pickup_company:
+	if shiprocket_enabled and pickup_from_type == "Company":
 		shiprocket = ShiprocketUtils(company=pickup_company)
 		shiprocket_prices = shiprocket.get_available_services(
 			parcels,
@@ -272,8 +272,10 @@ def print_shipping_label(shipment: str):
 	elif service_provider == SHIPROCKET_PROVIDER:
 		shipping_label = []
 		shiprocket = ShiprocketUtils(company=pickup_company)
-		file_url = shiprocket.generate_lable(shipment_id)
-		shipping_label.append(file_url)
+		content = shiprocket.generate_lable(shipment_id)
+		if not content:
+			frappe.throw("Failed to generate label.")
+		shipping_label.append(content)
 	elif service_provider == DELHIVERY_PROVIDER:
 		delhivery = DelhiveryOneUtils(company=pickup_company)
 		shipping_label = delhivery.get_label(shipment_id)

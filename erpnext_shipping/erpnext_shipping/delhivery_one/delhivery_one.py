@@ -13,6 +13,7 @@ DELHIVERY_PROVIDER = "Delhivery"
 class DelhiveryOneUtils:
 	def __init__(self, company):
 		settings = get_shipping_provider(company, "Delhiveryone")
+		settings = frappe.get_doc("Shipping Provider", settings["name"])
 		self.service_provider = settings.service_provider
 		self.company = settings.company
 		self.api_key = settings.get_password("api_key")
@@ -50,20 +51,20 @@ class DelhiveryOneUtils:
 		url = "https://track.delhivery.com/api/kinko/v1/invoice/charges/.json"
 		services = []
 		available_services = []
-
 		for mode in ["S", "E"]:
 			params = {
 				"md": mode,
 				"ss": "Delivered",
 				"d_pin": delhivery_code,
 				"o_pin": pickup_code,
-				"cgm": weight * 1000,
+				"cgm": int(weight) * 1000,
 			}
 
 			try:
 				response = requests.get(url, headers=headers, params=params)
 
 				if response.status_code == 200:
+					print(response.json())
 					services.append({mode: response.json()})
 
 			except Exception:
