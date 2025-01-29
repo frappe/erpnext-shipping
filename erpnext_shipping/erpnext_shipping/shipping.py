@@ -5,6 +5,7 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
+from erpnext_shipping.erpnext_shipping.aramex.aramex import ARAMEX_PROVIDER, AramexUtils
 from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import (
 	DELHIVERY_PROVIDER,
 	DelhiveryOneUtils,
@@ -51,6 +52,7 @@ def fetch_shipping_rates(
 	delhivery_one_enabled = get_shipping_provider(pickup_company, "Delhiveryone")
 	shiprocket_enabled = get_shipping_provider(pickup_company, "Shiprocket")
 	envia_enabled = get_shipping_provider(pickup_company, "Envia")
+	aramex_enabled = get_shipping_provider(pickup_company, "Aramex")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -132,6 +134,20 @@ def fetch_shipping_rates(
 		)
 		delhivery_prices = match_parcel_service_type_carrier(delhivery_prices, "carrier", "service_name")
 		shipment_prices += delhivery_prices
+
+	if aramex_enabled and pickup_from_type == "Company":
+		aramex = AramexUtils(company=pickup_company)
+		aramex_prices = (
+			aramex.get_available_services(
+				delivery_address=delivery_address,
+				pickup_address=pickup_address,
+				weight=total_weight,
+				parcels=parcels,
+			)
+			or []
+		)
+		aramex_prices = match_parcel_service_type_carrier(aramex_prices, "carrier", "service_name")
+		shipment_prices += aramex_prices
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
@@ -238,6 +254,23 @@ def create_shipment(
 			pickup_address_name=pickup_address_name,
 		)
 
+	if service_info["service_provider"] == ARAMEX_PROVIDER:
+		aramex = AramexUtils()
+		shipment_info = aramex.create_shipment(
+			shipment=shipment,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			value_of_goods=value_of_goods,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+			pickup_address=pickup_address,
+			pickup_address_name=pickup_address_name,
+			pickup_contact_name=pickup_contact_name,
+			delivery_contact_name=delivery_contact_name,
+		)
+
 	if service_info["service_provider"] == SHIPROCKET_PROVIDER:
 		shiprocket = ShiprocketUtils(company=pickup_company)
 		shipment_info = shiprocket.create_shiprocket_shipment(
@@ -316,11 +349,13 @@ def print_shipping_label(shipment: str):
 
 	elif service_provider == ENVIA_PROVIDER:
 		shipping_label = []
-		file_url = frappe.db.get_value(
-			"File",
-			{"file_name": f"label_{shipment}.pdf"},
-			"file_url",
-		)
+		file_url = get_shipping_label(shipment)
+		if file_url:
+			shipping_label.append(file_url)
+
+	elif service_provider == ARAMEX_PROVIDER:
+		shipping_label = []
+		file_url = get_shipping_label(shipment)
 		if file_url:
 			shipping_label.append(file_url)
 
@@ -329,6 +364,14 @@ def print_shipping_label(shipment: str):
 		shipping_label = delhivery.get_label(shipment_id)
 
 	return shipping_label
+
+
+def get_shipping_label(shipment):
+	return frappe.db.get_value(
+		"File",
+		{"file_name": f"label_{shipment}.pdf"},
+		"file_url",
+	)
 
 
 def save_label_as_attachment(shipment: str, content: bytes) -> str:
@@ -372,6 +415,10 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == ENVIA_PROVIDER and awb_number:
 		envia = Enviautils(company=pickup_company)
 		tracking_data = envia.get_tracking_data(awb_number)
+
+	elif service_provider == ARAMEX_PROVIDER:
+		aramex = AramexUtils(company=pickup_company)
+		tracking_data = aramex.get_tracking_data(shipment_id)
 
 	if not tracking_data:
 		return
