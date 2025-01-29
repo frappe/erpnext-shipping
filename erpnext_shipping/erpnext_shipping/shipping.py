@@ -456,3 +456,10 @@ def update_delivery_note(delivery_notes, shipment_info=None, tracking_info=None)
 			dl_doc.db_set("tracking_url", tracking_info.get("tracking_url"))
 			dl_doc.db_set("tracking_status", tracking_info.get("tracking_status"))
 			dl_doc.db_set("tracking_status_info", tracking_info.get("tracking_status_info"))
+
+
+@frappe.whitelist()
+def calculate_total_weight(shipment_parcel):
+	shipment_parcel = json.loads(shipment_parcel)
+	total_weight = sum(parcels.get("weight", 0) for parcels in shipment_parcel)
+	return total_weight
