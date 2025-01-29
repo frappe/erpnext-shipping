@@ -6,7 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "provider_name"
+  "provider_name",
+  "authentication_type",
+  "token_expiry"
  ],
  "fields": [
   {
@@ -16,11 +18,25 @@
    "label": "Provider Name",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "authentication_type",
+   "fieldtype": "Select",
+   "label": "Authentication Type",
+   "options": "\nOAuth\nAPI Key\nBasic",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.authentication_type==\"OAuth\"",
+   "fieldname": "token_expiry",
+   "fieldtype": "Int",
+   "label": "Token Expiry",
+   "mandatory_depends_on": "eval:doc.authentication_type==\"OAuth\""
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-20 15:46:31.823082",
+ "modified": "2025-01-23 17:04:32.119193",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Service Provider",

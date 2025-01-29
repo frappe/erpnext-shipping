@@ -4,6 +4,14 @@ import frappe
 from frappe import _
 from frappe.utils.data import get_link_to_form
 
+SERVICE_PROVIDERS = [
+	"Shiprocket",
+	"Delhiveryone",
+	"Shipstation",
+	"Aramex",
+	"Fedex",
+]
+
 
 def get_tracking_url(carrier, tracking_number):
 	# Return the formatted Tracking URL.
@@ -126,3 +134,39 @@ def update_tracking_info_daily():
 			fields = ["awb_number", "tracking_status", "tracking_status_info", "tracking_url"]
 			for field in fields:
 				shipment_doc.db_set(field, tracking_info.get(field))
+
+
+def get_shipping_provider(company, provider):
+	docs = frappe.db.get_value(
+		"Shipping Provider",
+		{"company": company, "enable": 1, "service_provider": provider},
+		["*"],
+		as_dict=True,
+	)
+	return docs
+
+
+def get_pickup_location(
+	company,
+	provider,
+):
+	doc = get_shipping_provider(company, provider)
+	if doc:
+		pickup_doc = frappe.db.get_value(
+			"Pickup Location",
+			{"parenttype": "Shipping Provider", "parent": doc["name"], "company": company},
+			"location",
+		)
+		return pickup_doc
+
+
+def remove_bearer_key():
+	docs = frappe.get_all("Shipping Provider", filters={"enable": 1}, pluck="name")
+	for doc in docs:
+		remove_field_value("Shipping Provider", doc, "barer_key")
+
+
+def remove_field_value(doctype, docname, fieldname):
+	doc = frappe.get_doc(doctype, docname)
+	doc.set(fieldname, None)
+	doc.save()
