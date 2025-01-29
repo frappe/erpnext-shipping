@@ -5,7 +5,7 @@ import json
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 
-from erpnext_shipping.erpnext_shipping.aramex.aramex import AramexUtils
+from erpnext_shipping.erpnext_shipping.aramex.aramex import ARAMEX_PROVIDER, AramexUtils
 from erpnext_shipping.erpnext_shipping.delhivery_one.delhivery_one import (
 	DELHIVERY_PROVIDER,
 	DelhiveryOneUtils,
@@ -34,6 +34,7 @@ def fetch_shipping_rates(
 	value_of_goods,
 	pickup_contact_name=None,
 	delivery_contact_name=None,
+	total_weight=None,
 ):
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
@@ -96,6 +97,20 @@ def fetch_shipping_rates(
 		)
 		delhivery_prices = match_parcel_service_type_carrier(delhivery_prices, "carrier", "service_name")
 		shipment_prices += delhivery_prices
+
+	if aramex_enabled and pickup_from_type == "Company":
+		aramex = AramexUtils()
+		aramex_prices = (
+			aramex.get_available_services(
+				delivery_address=delivery_address,
+				pickup_address=pickup_address,
+				weight=total_weight,
+				parcels=parcels,
+			)
+			or []
+		)
+		aramex_prices = match_parcel_service_type_carrier(aramex_prices, "carrier", "service_name")
+		shipment_prices += aramex_prices
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
@@ -181,6 +196,23 @@ def create_shipment(
 			service_info=service_info,
 			pickup_address=pickup_address,
 			pickup_address_name=pickup_address_name,
+		)
+
+	if service_info["service_provider"] == ARAMEX_PROVIDER:
+		aramex = AramexUtils()
+		shipment_info = aramex.create_shipment(
+			shipment=shipment,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			value_of_goods=value_of_goods,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+			pickup_address=pickup_address,
+			pickup_address_name=pickup_address_name,
+			pickup_contact_name=pickup_contact_name,
+			delivery_contact_name=delivery_contact_name,
 		)
 
 	if shipment_info:
