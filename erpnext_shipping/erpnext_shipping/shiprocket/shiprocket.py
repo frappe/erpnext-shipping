@@ -7,7 +7,11 @@ from erpnext_shipping.erpnext_shipping.shiprocket.utils import (
 	SHIPROCKET_API_BASE_URL,
 	get_order_creation_payload,
 )
-from erpnext_shipping.erpnext_shipping.utils import get_pickup_location, get_shipping_provider
+from erpnext_shipping.erpnext_shipping.utils import (
+	custom_frappe_throw,
+	get_pickup_location,
+	get_shipping_provider,
+)
 
 SHIPROCKET_PROVIDER = "Shiprocket"
 
@@ -15,8 +19,9 @@ SHIPROCKET_PROVIDER = "Shiprocket"
 class ShiprocketUtils:
 	def __init__(self, company):
 		self.doc = get_shipping_provider(company, "Shiprocket")
-		self.bearer_token = self.doc.get("barer_key")
+		self.bearer_token = self.doc.get("bearer_key")
 		self.company = self.doc.get("company")
+		self.name = self.doc.get("name")
 		if not self.bearer_token:
 			generate_token(self.doc["name"])
 
@@ -45,12 +50,14 @@ class ShiprocketUtils:
 						return address
 		except Exception:
 			frappe.log_error("Error fetching shipping address from Shiprocket", frappe.get_traceback())
+			custom_frappe_throw(
+				self.name, "Shiprocket", "Something went wrong check error log for more details"
+			)
 
 	def get_available_services(self, parcels, delivery_address_name, pickup_address_name, total_weight):
 		weight = total_weight
 		pickup_postcode = self.get_post_code(pickup_address_name)
 		delivery_postcode = self.get_post_code(delivery_address_name)
-		print("this is called")
 		try:
 			url = f"{SHIPROCKET_API_BASE_URL}/courier/serviceability"
 			headers = self._get_headers()
@@ -67,7 +74,6 @@ class ShiprocketUtils:
 				services_available = services_available["available_courier_companies"]
 				available_services = []
 				for services in services_available:
-					# if services and self.check_weight(parcels, services):
 					available_service = self.get_service_dict(services, parcels)
 					available_services.append(available_service)
 				return available_services
@@ -77,13 +83,14 @@ class ShiprocketUtils:
 					parcels, delivery_address_name, pickup_address_name, total_weight
 				)
 			else:
-				self.custom_frappe_throw(response_dict["message"])
+				frappe.log_error("Shiprocket Error", response_dict["message"])
+				custom_frappe_throw(self.name, "Shiprocket", response_dict["message"])
 				return []
 		except Exception:
 			frappe.log_error("Shiprocket error in fetching services", frappe.get_traceback())
-
-	# def check_weight(self, parcels, services):
-	# 	chnarge_weight = float(services["charge_weight"])
+			custom_frappe_throw(
+				self.name, "Shiprocket", "Something went wrong check error log for more details"
+			)
 
 	def get_post_code(self, address_name):
 		if not frappe.db.exists("Address", address_name):
@@ -151,9 +158,13 @@ class ShiprocketUtils:
 				generate_token(self.doc["name"])
 				return self.create_shiprocket_shipment(**kwargs)
 			else:
-				print("Failed to create shipment:", response.json())
+				frappe.log_error("Shiprocket error in creating order", str(response_data))
+				custom_frappe_throw(self.name, "Shiprocket", "Shiprocket error in creating order")
 		except Exception:
 			frappe.log_error("Shiprocket error in creating order", frappe.get_traceback())
+			custom_frappe_throw(
+				self.name, "Shiprocket", "Something went wrong check error log for more details"
+			)
 
 	def _assign_awb(self, shipment_id, service_info):
 		try:
@@ -183,9 +194,15 @@ class ShiprocketUtils:
 				generate_token(self.doc["name"])
 				return self._assign_awb(shipment_id, service_info)
 			else:
-				print("Failed to move shipment to 'Ship Now':", response_dict)
+				frappe.log_error("Failed to move shipment to 'Ship Now'", str(response_dict))
+				custom_frappe_throw(
+					self.name, "Shiprocket", "Something went wrong check error log for more details"
+				)
 		except Exception:
 			frappe.log_error("Shiprocket error in moving shipment to 'Ship Now'", frappe.get_traceback())
+			custom_frappe_throw(
+				self.name, "Shiprocket", "Something went wrong check error log for more details"
+			)
 
 	def generate_lable(self, shipment_id):
 		try:
@@ -204,19 +221,16 @@ class ShiprocketUtils:
 				generate_token(self.doc["name"])
 				return self.generate_lable(shipment_id)
 			else:
-				self.custom_frappe_throw(response_dict["message"])
+				frappe.log_error("Unable to generate shiprocket label", str(response_dict))
+				custom_frappe_throw(self.name, "Shiprocket", response_dict["message"])
 
 		except Exception:
 			frappe.log_error("Error generating shiprock label", frappe.get_traceback())
+			custom_frappe_throw(
+				self.name, "Shiprocket", "Something went wrong check error log for more details"
+			)
 
-	def custom_frappe_throw(self, message):
-		frappe.throw(
-			f"<b>Shiprocket:</b> {message} <br>"
-			f"Disable the Shiprocket Account if you need to continue without Shiprocket: "
-			f"<a href='/app/shipping-provider/{self.doc['name']}'>{self.doc['name']}</a></i>"
-		)
-
-	def track_order(self, shipment_id):
+	def get_tracking_data(self, shipment_id):
 		try:
 			url = f"{SHIPROCKET_API_BASE_URL}/courier/track/shipment/{shipment_id}"
 
@@ -250,7 +264,7 @@ class ShiprocketUtils:
 				generate_token(self.doc["name"])
 				return self.track_order(shipment_id)
 			else:
-				self.custom_frappe_throw(response_dict["message"])
+				custom_frappe_throw(self.name, "Shiprocket", response_dict["message"])
 		except Exception:
 			frappe.log_error("Error tracking shiprocket order", frappe.get_traceback())
 
@@ -267,7 +281,7 @@ def generate_token(docname):
 		response_dict = json.loads(response.text)
 		if response.status_code == 200:
 			token = response_dict["token"]
-			frappe.db.set_value("Shipping Provider", docname, "barer_key", token)
+			frappe.db.set_value("Shipping Provider", docname, "bearer_key", token)
 		else:
 			frappe.throw(f"Shiprocket: {response_dict['message']}")
 

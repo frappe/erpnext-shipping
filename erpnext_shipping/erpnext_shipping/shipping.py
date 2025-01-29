@@ -14,6 +14,7 @@ from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	get_letmeship_utils,
 )
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
+from erpnext_shipping.erpnext_shipping.envia.envia import ENVIA_PROVIDER, Enviautils
 from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
 	SHIPROCKET_PROVIDER,
 	ShiprocketUtils,
@@ -40,6 +41,8 @@ def fetch_shipping_rates(
 	delivery_contact_name=None,
 	pickup_company=None,
 	total_weight=None,
+	pickup_contact=None,
+	delivery_contact=None,
 ):
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
@@ -47,6 +50,7 @@ def fetch_shipping_rates(
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
 	delhivery_one_enabled = get_shipping_provider(pickup_company, "Delhiveryone")
 	shiprocket_enabled = get_shipping_provider(pickup_company, "Shiprocket")
+	envia_enabled = get_shipping_provider(pickup_company, "Envia")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -61,6 +65,22 @@ def fetch_shipping_rates(
 		)
 		shiprocket_prices = match_parcel_service_type_carrier(shiprocket_prices, "carrier", "service_name")
 		shipment_prices += shiprocket_prices
+
+	if envia_enabled and pickup_from_type == "Company":
+		envia = Enviautils(company=pickup_company)
+		envia = envia.get_avilable_services(
+			delivery_address=delivery_address,
+			pickup_address=pickup_address,
+			parcels=parcels,
+			pickup_contact_name=pickup_contact_name,
+			delivery_contact=delivery_contact,
+			pickup_contact=pickup_contact,
+			total_weight=total_weight,
+			value_of_goods=value_of_goods,
+		)
+		envia_prices = match_parcel_service_type_carrier(envia, "carrier", "service_name")
+		shipment_prices += envia_prices
+
 	if letmeship_enabled:
 		pickup_contact = None
 		delivery_contact = None
@@ -174,6 +194,23 @@ def create_shipment(
 			service_info=service_info,
 		)
 
+	if service_info["service_provider"] == ENVIA_PROVIDER:
+		envia = Enviautils(company=pickup_company)
+		shipment_info = envia.create_shipment(
+			pickup_address=pickup_address,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			pickup_date=pickup_date,
+			value_of_goods=value_of_goods,
+			pickup_contact=pickup_contact,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+			total_weight=total_weight,
+			shipment=shipment,
+		)
+
 	if service_info["service_provider"] == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		shipment_info = sendcloud.create_shipment(
@@ -276,6 +313,17 @@ def print_shipping_label(shipment: str):
 		if not content:
 			frappe.throw("Failed to generate label.")
 		shipping_label.append(content)
+
+	elif service_provider == ENVIA_PROVIDER:
+		shipping_label = []
+		file_url = frappe.db.get_value(
+			"File",
+			{"file_name": f"label_{shipment}.pdf"},
+			"file_url",
+		)
+		if file_url:
+			shipping_label.append(file_url)
+
 	elif service_provider == DELHIVERY_PROVIDER:
 		delhivery = DelhiveryOneUtils(company=pickup_company)
 		shipping_label = delhivery.get_label(shipment_id)
@@ -298,7 +346,7 @@ def save_label_as_attachment(shipment: str, content: bytes) -> str:
 
 
 @frappe.whitelist()
-def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None):
+def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None, awb_number=None):
 	if delivery_notes is None:
 		delivery_notes = []
 
@@ -315,11 +363,16 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
 	elif service_provider == SHIPROCKET_PROVIDER:
 		shiprocket = ShiprocketUtils(company=pickup_company)
-		tracking_data = shiprocket.track_order(shipment_id)
+		tracking_data = shiprocket.get_tracking_data(shipment_id)
 
 	elif service_provider == DELHIVERY_PROVIDER:
-		delhivery = DelhiveryOneUtils()
+		delhivery = DelhiveryOneUtils(company=pickup_company)
 		tracking_data = delhivery.get_tracking_data(shipment_id)
+
+	elif service_provider == ENVIA_PROVIDER and awb_number:
+		envia = Enviautils(company=pickup_company)
+		tracking_data = envia.get_tracking_data(awb_number)
+
 	if not tracking_data:
 		return
 

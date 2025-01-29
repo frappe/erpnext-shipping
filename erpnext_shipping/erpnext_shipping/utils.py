@@ -160,13 +160,32 @@ def get_pickup_location(
 		return pickup_doc
 
 
+def custom_frappe_throw(doc_name, provider, message):
+	frappe.throw(
+		f"<b>{provider}:</b> {message} <br>"
+		f"Disable the {provider} Account if you need to continue without {provider}: "
+		f"<a href='/app/shipping-provider/{doc_name}'>{doc_name}</a></i>"
+	)
+
+
 def remove_bearer_key():
 	docs = frappe.get_all("Shipping Provider", filters={"enable": 1}, pluck="name")
 	for doc in docs:
-		remove_field_value("Shipping Provider", doc, "barer_key")
+		remove_field_value("Shipping Provider", doc, "bearer_key")
 
 
 def remove_field_value(doctype, docname, fieldname):
 	doc = frappe.get_doc(doctype, docname)
 	doc.set(fieldname, None)
 	doc.save()
+
+
+def save_lable(shipment: str, url: str):
+	attachment = frappe.new_doc("File")
+	attachment.file_name = f"label_{shipment}.pdf"
+	attachment.file_url = url
+	attachment.folder = "Home/Attachments"
+	attachment.attached_to_doctype = "Shipment"
+	attachment.attached_to_name = shipment
+	attachment.is_private = 1
+	attachment.save()
