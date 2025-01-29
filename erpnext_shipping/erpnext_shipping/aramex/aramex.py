@@ -8,7 +8,6 @@ import requests
 from frappe import _
 from requests.exceptions import HTTPError
 
-from erpnext_shipping.erpnext_shipping.shipping import save_label_as_attachment
 from erpnext_shipping.erpnext_shipping.utils import get_shipping_provider, show_error_alert
 
 ARAMEX_PROVIDER = "Aramex"
@@ -16,7 +15,7 @@ ARAMEX_PROVIDER = "Aramex"
 
 class AramexUtils:
 	def __init__(self, company):
-		settings = get_shipping_provider(company, "Delhiveryone")
+		settings = get_shipping_provider(company, "Aramex")
 		settings = frappe.get_doc("Shipping Provider", settings["name"])
 		self.service_provider = settings.service_provider
 		self.company = settings.company
@@ -105,6 +104,8 @@ class AramexUtils:
 					.get("Charges", {})
 					.get("Value", 0)
 				)
+				from erpnext_shipping.erpnext_shipping.shipping import save_label_as_attachment
+
 				for ids in shipment_ids:
 					save_label_as_attachment(ids, shipment.get("Shipments", [{}])[0].get("LabelURL", {}))
 				return {

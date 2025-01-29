@@ -116,7 +116,7 @@ def fetch_shipping_rates(
 		shipment_prices += delhivery_prices
 
 	if aramex_enabled and pickup_from_type == "Company":
-		aramex = AramexUtils()
+		aramex = AramexUtils(company=pickup_company)
 		aramex_prices = (
 			aramex.get_available_services(
 				delivery_address=delivery_address,
