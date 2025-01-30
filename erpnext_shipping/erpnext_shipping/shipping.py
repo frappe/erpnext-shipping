@@ -16,6 +16,7 @@ from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 )
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
 from erpnext_shipping.erpnext_shipping.envia.envia import ENVIA_PROVIDER, Enviautils
+from erpnext_shipping.erpnext_shipping.shippo.shippo import SHIPPO_PROVIDER, ShippoUtils
 from erpnext_shipping.erpnext_shipping.shiprocket.shiprocket import (
 	SHIPROCKET_PROVIDER,
 	ShiprocketUtils,
@@ -53,6 +54,7 @@ def fetch_shipping_rates(
 	shiprocket_enabled = get_shipping_provider(pickup_company, "Shiprocket")
 	envia_enabled = get_shipping_provider(pickup_company, "Envia")
 	aramex_enabled = get_shipping_provider(pickup_company, "Aramex")
+	shippo_enabled = get_shipping_provider(pickup_company, "Shippo")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -148,6 +150,22 @@ def fetch_shipping_rates(
 		)
 		aramex_prices = match_parcel_service_type_carrier(aramex_prices, "carrier", "service_name")
 		shipment_prices += aramex_prices
+
+	if shippo_enabled and pickup_from_type == "Company":
+		shippo = ShippoUtils(company=pickup_company)
+		shippo_prices = (
+			shippo.get_available_services(
+				delivery_address=delivery_address,
+				pickup_address=pickup_address,
+				parcels=parcels,
+				delivery_address_name=delivery_address_name,
+				pickup_address_name=pickup_address_name,
+				description_of_content=description_of_content,
+			)
+			or []
+		)
+		shippo_prices = match_parcel_service_type_carrier(shippo_prices, "carrier", "service_name")
+		shipment_prices += shippo_prices
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
@@ -288,6 +306,10 @@ def create_shipment(
 			total_weight=total_weight,
 		)
 
+	if service_info["service_provider"] == SHIPPO_PROVIDER:
+		shippo = ShippoUtils(company=pickup_company)
+		shipment_info = shippo.create_shipment(shipment=shipment, service_info=service_info)
+
 	if shipment_info:
 		shipment = frappe.get_doc("Shipment", shipment)
 		shipment.db_set(
@@ -363,6 +385,10 @@ def print_shipping_label(shipment: str):
 		delhivery = DelhiveryOneUtils(company=pickup_company)
 		shipping_label = delhivery.get_label(shipment_id)
 
+	elif service_provider == SHIPPO_PROVIDER:
+		shippo = ShippoUtils(company=pickup_company)
+		shipping_label = shippo.get_label(shipment_id, shipment)
+
 	return shipping_label
 
 
@@ -395,6 +421,8 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 
 	shipment_doc = frappe.get_doc("Shipment", shipment)
 	pickup_company = shipment_doc.pickup_company
+	carrier = shipment_doc.carrier
+	tracking_url = shipment_doc.tracking_url
 
 	# Update Tracking info in Shipment
 	tracking_data = None
@@ -419,6 +447,10 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == ARAMEX_PROVIDER:
 		aramex = AramexUtils(company=pickup_company)
 		tracking_data = aramex.get_tracking_data(shipment_id)
+
+	elif service_provider == SHIPPO_PROVIDER:
+		shippo = ShippoUtils(company=pickup_company)
+		tracking_data = shippo.get_tracking_data(awb_number, carrier, tracking_url)
 
 	if not tracking_data:
 		return
