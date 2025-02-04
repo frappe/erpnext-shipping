@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import json
+import re
 
 import frappe
 import requests
@@ -33,34 +34,57 @@ class SendCloudUtils:
 			link = get_link_to_form("SendCloud", "SendCloud", _("SendCloud Settings"))
 			frappe.throw(_("Please enable SendCloud Integration in {0}").format(link))
 
-	def get_available_services(self, delivery_address, parcels: list[dict]):
+	def get_available_services(self, delivery_address, pickup_address, parcels: list[dict]):
 		# Retrieve rates at SendCloud from specification stated.
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
+		total_weight = sum(parcel.get("weight", 0) for parcel in parcels)
+		max_length = max(parcel.get("length", 0) for parcel in parcels)
+		max_width = max(parcel.get("width", 0) for parcel in parcels)
+		max_height = max(parcel.get("height", 0) for parcel in parcels)
+
 		to_country = delivery_address.country_code.upper()
+		from_country = pickup_address.country_code.upper()
+
+
+		payload = {
+			 "to_country_code": to_country,
+			 "from_country_code": from_country,
+			 "weight": {"value": total_weight, "unit": "kg"},
+			 "dimensions": {
+				 "length": max_length,
+				 "width": max_width,
+				 "height": max_height,
+				 "unit": "cm"}}
 
 		try:
-			response = requests.get(
-				"https://panel.sendcloud.sc/api/v2/shipping_methods",
-				params={
-					"to_country": to_country,
-				},
+			response = requests.post(
+				"https://panel.sendcloud.sc/api/v3/fetch-shipping-options",
+				json=payload,
 				auth=(self.api_key, self.api_secret),
-			)
-			responses_dict = response.json()
+				headers={"Accept": "application/json", "Content-Type": "application/json"}
+				)
+			
+			response_data = response.json()
 
-			if "error" in responses_dict:
-				error_message = responses_dict["error"]["message"]
+			if "error" in response_data:
+				error_message = response_data["error"]["message"]
 				frappe.throw(error_message, title=_("SendCloud"))
 
-			available_services = []
-			for service in responses_dict.get("shipping_methods", []):
-				countries = [country for country in service["countries"] if country["iso_2"] == to_country]
+			if "data" not in response_data or not response_data["data"]:
+				frappe.throw(_("No shipping options found for this destination."), title=_("Sendcloud"))
 
-				if countries and check_weight(service, parcels):
-					available_service = self.get_service_dict(service, countries[0], parcels)
-					available_services.append(available_service)
+			available_services = []
+			for service in response_data["data"]:
+
+				if len(parcels) > 1 and service["functionalities"]["multicollo"] is False:
+					continue
+
+				available_service = self.get_service_dict(service, parcels)
+				available_services.append(available_service)
+
+				
 
 			return available_services
 		except Exception:
@@ -69,7 +93,8 @@ class SendCloudUtils:
 	def create_shipment(
 		self,
 		shipment,
-		delivery_company_name,
+		pickup_address,
+		pickup_contact,
 		delivery_address,
 		delivery_contact,
 		service_info,
@@ -83,44 +108,96 @@ class SendCloudUtils:
 
 		parcels = []
 		for i, parcel in enumerate(json.loads(shipment_parcel), start=1):
-			parcel_data = self.get_parcel_dict(
-				shipment,
-				parcel,
-				i,
-				delivery_company_name,
-				delivery_address,
-				delivery_contact,
-				service_info,
-				description_of_content,
-				value_of_goods,
-			)
-			parcels.append(parcel_data)
+			parcel_count = parcel.get("count")
+			for ___ in range(parcel_count):
+				parcel_data = self.get_parcel(
+						parcel,
+						shipment,
+						i,
+						description_of_content,
+						value_of_goods,
+					)
+				parcels.append(parcel_data)
 
+		house_number, address = self.extract_house_number(pickup_address.address_line1)
+
+
+		payload = {
+			"parcels": parcels,
+				
+			"to_address": {
+				"name": f"{delivery_contact.first_name} {delivery_contact.last_name}",
+				"address_line_1": delivery_address.address_line1,
+				"postal_code": delivery_address.pincode,
+				"city": delivery_address.city,
+				"country_code": delivery_address.country_code.upper(),
+				},
+			"from_address": {
+				"name": f"{pickup_contact.first_name} {pickup_contact.last_name}",
+				"address_line_1": address or pickup_address.address_line1, # Using original address if parsing fails
+				"house_number": house_number or  " ", # API requires a house number. If None, we use a U+200A HAIR SPACE to bypass validation without displaying a number
+				"postal_code": pickup_address.pincode,
+				"city": pickup_address.city,
+				"country_code": pickup_address.country_code.upper(),
+				"phone_number": pickup_contact.phone
+
+			},
+			"ship_with": {
+				"type": "shipping_option_code",
+				"properties": {
+					"shipping_option_code": service_info["service_id"],  
+					}
+				},
+			
+			}
+		url = ""
+		if len(parcels) > 1:
+			url = "https://panel.sendcloud.sc/api/v3/shipments"
+		else:
+			url = "https://panel.sendcloud.sc/api/v3/shipments/announce"
+	
 		try:
 			response = requests.post(
-				"https://panel.sendcloud.sc/api/v2/parcels?errors=verbose",
-				json={"parcels": parcels},
+				url,
+				json=payload,
 				auth=(self.api_key, self.api_secret),
+
 			)
 			response_data = response.json()
-			if "failed_parcels" in response_data:
-				error = response_data["failed_parcels"][0]["errors"]
+
+			if "errors" in response_data and response_data["errors"]:
+				error_details = [
+					f"Code: {err.get('code', 'N/A')}, Detail: {err.get('detail', 'N/A')}" 
+					for err in response_data["errors"]
+					]
+				error_message = "\n".join(error_details)
 				frappe.msgprint(
-					_("Error occurred while creating Shipment: {0}").format(error),
-					indicator="orange",
-					alert=True,
-				)
-			else:
-				shipment_id = ", ".join([str(x["id"]) for x in response_data["parcels"]])
-				awb_number = ", ".join([str(x["tracking_number"]) for x in response_data["parcels"]])
+					_("Error occurred while creating shipment:\n{0}").format(error_message),
+					indicator="red",
+					alert=True
+					)
+				return None
+
+			parcels_data = response_data.get("data", {}).get("parcels", [])
+			if parcels_data:
+				shipment_ids: list[str] = []
+				tracking_numbers: list[str] = []
+				tracking_urls: list[str] = []
+				for parcel in parcels_data:
+					shipment_ids.append(str(parcel["id"]))
+					tracking_numbers.append(parcel.get("tracking_number") or "")
+					tracking_urls.append(parcel.get("tracking_url") or "")
 				return {
 					"service_provider": "SendCloud",
-					"shipment_id": shipment_id,
+					"shipment_id": ", ".join(shipment_ids),
 					"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
 					"carrier_service": service_info["service_name"],
 					"shipment_amount": service_info["total_price"],
-					"awb_number": awb_number,
+					"awb_number": ", ".join(tracking_numbers),
+					"tracking_url": ", ".join(tracking_urls),
 				}
+
+
 		except Exception:
 			show_error_alert("creating SendCloud Shipment")
 
@@ -173,8 +250,8 @@ class SendCloudUtils:
 				tracking_data_parcel = tracking_data["parcel"]
 				tracking_data_parcel_status = tracking_data_parcel["status"]["message"]
 
-				tracking_urls.append(tracking_data_parcel["tracking_url"])
-				awb_number.append(tracking_data_parcel["tracking_number"])
+				tracking_urls.append(tracking_data_parcel.get("tracking_url", ""))
+				awb_number.append(tracking_data_parcel.get("tracking_number", ""))
 				tracking_status.append(tracking_data_parcel_status)
 				tracking_status_info.append(tracking_data_parcel_status)
 			return {
@@ -192,27 +269,18 @@ class SendCloudUtils:
 			count += parcel.get("count")
 		return flt(parcel_price) * count
 
-	def get_parcel_items(self, parcel, description_of_content, value_of_goods):
-		parcel_list = []
-		formatted_parcel = {}
-		formatted_parcel["description"] = description_of_content
-		formatted_parcel["quantity"] = parcel.get("count")
-		formatted_parcel["weight"] = flt(parcel.get("weight"), WEIGHT_DECIMALS)
-		formatted_parcel["value"] = flt(value_of_goods, CURRENCY_DECIMALS)
-		parcel_list.append(formatted_parcel)
-		return parcel_list
-
-	def get_service_dict(self, service, country, parcels: list[dict]):
+	def get_service_dict(self, service, parcels: list[dict]):
 		"""Returns a dictionary with service info."""
 		available_service = frappe._dict()
 		available_service.service_provider = "SendCloud"
-		available_service.carrier = self.get_carrier(service["carrier"], post_or_get="get")
-		available_service.service_name = service["name"]
+		available_service.carrier = service["carrier"]["name"]  
+		available_service.service_name = service["product"]["name"]  
+		available_service.service_id = service["code"]  
 
-		price = country["price"] or sum(price_part["value"] for price_part in country["price_breakdown"])
-		available_service.total_price = self.total_parcel_price(price, parcels)
-
-		available_service.service_id = service["id"]
+		price = 0
+		if "quotes" in service and service["quotes"]:
+			price = float(service["quotes"][0]["price"]["total"]["value"])  
+			available_service.total_price = self.total_parcel_price(price, parcels)
 
 		return available_service
 
@@ -224,42 +292,47 @@ class SendCloudUtils:
 		else:
 			return carrier_name.upper() if post_or_get == "get" else carrier_name.lower()
 
-	def get_parcel_dict(
-		self,
-		shipment,
-		parcel,
-		index,
-		delivery_company_name,
-		delivery_address,
-		delivery_contact,
-		service_info,
-		description_of_content,
-		value_of_goods,
-	):
+	def extract_house_number(self, address):
+		pattern = r"\b\d+[/-]?\w*(?:-\d+\w*)?\b"
+		match = re.search(pattern, address)
+		if match:
+			house_number = match.group(0)  
+			cleaned_address = re.sub(pattern, "", address).strip()
+			return house_number, cleaned_address
+		else:
+			return None, None
+
+	def get_parcel(self, parcel, shipment, index, description_of_content, value_of_goods):
 		return {
-			"name": f"{delivery_contact.first_name} {delivery_contact.last_name}",
-			"company_name": delivery_company_name or delivery_address.address_title,
-			"address": delivery_address.address_line1,
-			"address_2": delivery_address.address_line2 or "",
-			"city": delivery_address.city,
-			"postal_code": delivery_address.pincode,
-			"telephone": delivery_contact.phone,
-			"request_label": True,
-			"email": delivery_contact.email_id,
-			"data": [],
-			"country": delivery_address.country_code.upper(),
-			"shipment": {"id": service_info["service_id"]},
-			"order_number": f"{shipment}-{index}",
-			"external_reference": f"{shipment}-{index}",
-			"weight": flt(parcel.get("weight"), WEIGHT_DECIMALS),
-			"parcel_items": self.get_parcel_items(parcel, description_of_content, value_of_goods),
+			 "dimensions": {
+				 "length": parcel.get("length", 0),
+				 "width": parcel.get("width", 0),
+				 "height": parcel.get("height", 0),
+				 "unit": "cm"
+				 },
+				 "weight": {
+					 "value": parcel.get("weight", 0),
+					 "unit": "kg"
+        },
+		"parcel_items": self.get_parcel_items(parcel, description_of_content, value_of_goods),
+		"order_number": f"{shipment}-{index}"
 		}
-
-
-def check_weight(service: dict, parcels: list[dict]) -> bool:
-	"""Check if the weight of any parcel is within the range of the service."""
-	max_weight_kg = float(service["max_weight"])
-	min_weight_kg = float(service["min_weight"])
-	return any(
-		max_weight_kg > parcel.get("weight") and min_weight_kg <= parcel.get("weight") for parcel in parcels
-	)
+	
+	def get_parcel_items(self, parcel, description_of_content, value_of_goods):
+		parcel_list = []
+		formatted_parcel = {
+			"description": description_of_content,
+			"quantity": parcel.get("count", 1),
+			"weight": {
+				"value": flt(parcel.get("weight"), WEIGHT_DECIMALS),
+				"unit": "kg"
+			},
+			"price": {
+				"value": flt(value_of_goods, CURRENCY_DECIMALS),
+				"currency": "EUR"
+			},
+			"hs_code": "620520"
+		}
+		parcel_list.append(formatted_parcel)
+		return parcel_list
+	
