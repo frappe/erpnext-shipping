@@ -67,10 +67,11 @@ def fetch_shipping_rates(
 		letmeship_prices = match_parcel_service_type_carrier(letmeship_prices, "carrier", "service_name")
 		shipment_prices += letmeship_prices
 
-	if sendcloud_enabled and pickup_from_type == "Company":
+	if sendcloud_enabled:
 		sendcloud = SendCloudUtils()
 		sendcloud_prices = (
-			sendcloud.get_available_services(delivery_address=delivery_address, parcels=parcels) or []
+			sendcloud.get_available_services(delivery_address=delivery_address,pickup_address=pickup_address,
+ 			parcels=parcels) or []
 		)
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
@@ -135,8 +136,9 @@ def create_shipment(
 		sendcloud = SendCloudUtils()
 		shipment_info = sendcloud.create_shipment(
 			shipment=shipment,
-			delivery_company_name=delivery_company_name,
 			delivery_address=delivery_address,
+			pickup_address=pickup_address,
+			pickup_contact=pickup_contact,
 			shipment_parcel=shipment_parcel,
 			description_of_content=description_of_content,
 			value_of_goods=value_of_goods,
@@ -189,26 +191,27 @@ def print_shipping_label(shipment: str):
 		sendcloud = SendCloudUtils()
 		shipping_label = []
 		_labels = sendcloud.get_label(shipment_id)
-		for label_url in _labels:
+		for i, label_url in enumerate(_labels, start=1):
 			content = sendcloud.download_label(label_url)
-			file_url = save_label_as_attachment(shipment, content)
+			file_url = save_label_as_attachment(shipment, content, i)
 			shipping_label.append(file_url)
-
+	
 	return shipping_label
 
 
-def save_label_as_attachment(shipment: str, content: bytes) -> str:
+def save_label_as_attachment(shipment: str, content: bytes, index: int = None) -> str:
 	"""Store label as attachment to Shipment and return the URL."""
 	attachment = frappe.new_doc("File")
-
-	attachment.file_name = f"label_{shipment}.pdf"
+	if index is not None:
+		attachment.file_name = f"label_{shipment}_{index}.pdf"
+	else:
+		attachment.file_name = f"label_{shipment}.pdf"
 	attachment.content = content
 	attachment.folder = "Home/Attachments"
 	attachment.attached_to_doctype = "Shipment"
 	attachment.attached_to_name = shipment
 	attachment.is_private = 1
 	attachment.save()
-
 	return attachment.file_url
 
 
