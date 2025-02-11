@@ -23,7 +23,7 @@ class ShiprocketUtils:
 		self.company = self.doc.get("company")
 		self.name = self.doc.get("name")
 		if not self.bearer_token:
-			generate_token(self.doc["name"])
+			self.generate_token()
 
 	def _get_headers(self):
 		"""Generate headers for API requests."""
@@ -78,7 +78,7 @@ class ShiprocketUtils:
 					available_services.append(available_service)
 				return available_services
 			elif response.status_code == 401:
-				generate_token(self.doc["name"])
+				self.generate_token()
 				return self.get_available_services(
 					parcels, delivery_address_name, pickup_address_name, total_weight
 				)
@@ -155,7 +155,7 @@ class ShiprocketUtils:
 				if shipment_id:
 					return self._assign_awb(shipment_id, kwargs["service_info"])
 			elif response.status_code == 401:
-				generate_token(self.doc["name"])
+				self.generate_token()
 				return self.create_shiprocket_shipment(**kwargs)
 			else:
 				frappe.log_error("Shiprocket error in creating order", str(response_data))
@@ -191,7 +191,7 @@ class ShiprocketUtils:
 					"awb_number": ship_now_response_data["data"]["awb_code"],
 				}
 			elif response.status_code == 401:
-				generate_token(self.doc["name"])
+				self.generate_token()
 				return self._assign_awb(shipment_id, service_info)
 			else:
 				frappe.log_error("Failed to move shipment to 'Ship Now'", str(response_dict))
@@ -218,7 +218,7 @@ class ShiprocketUtils:
 					return None
 				return response_dict["label_url"]
 			elif response.status_code == 401:
-				generate_token(self.doc["name"])
+				self.generate_token()
 				return self.generate_lable(shipment_id)
 			else:
 				frappe.log_error("Unable to generate shiprocket label", str(response_dict))
@@ -261,29 +261,30 @@ class ShiprocketUtils:
 					"tracking_url": ", ".join(filter(None, tracking_urls)),
 				}
 			elif response.status_code == 401:
-				generate_token(self.doc["name"])
-				return self.track_order(shipment_id)
+				self.generate_token()
+				return self.get_tracking_data(shipment_id)
 			else:
 				custom_frappe_throw(self.name, "Shiprocket", response_dict["message"])
 		except Exception:
 			frappe.log_error("Error tracking shiprocket order", frappe.get_traceback())
 
+	def generate_token(self):
+		docname = self.name
+		doc = frappe.get_doc("Shipping Provider", docname)
+		try:
+			url = f"{SHIPROCKET_API_BASE_URL}/auth/login"
 
-def generate_token(docname):
-	doc = frappe.get_doc("Shipping Provider", docname)
-	try:
-		url = f"{SHIPROCKET_API_BASE_URL}/auth/login"
+			payload = json.dumps({"email": doc.user_key, "password": doc.get_password("user_secret")})
+			headers = {"Content-Type": "application/json"}
 
-		payload = json.dumps({"email": doc.user_key, "password": doc.get_password("user_secret")})
-		headers = {"Content-Type": "application/json"}
+			response = requests.request("POST", url, headers=headers, data=payload)
+			response_dict = json.loads(response.text)
+			if response.status_code == 200:
+				token = response_dict["token"]
+				self.bearer_token = token
+				frappe.db.set_value("Shipping Provider", docname, "bearer_key", token)
+			else:
+				frappe.throw(f"Shiprocket: {response_dict['message']}")
 
-		response = requests.request("POST", url, headers=headers, data=payload)
-		response_dict = json.loads(response.text)
-		if response.status_code == 200:
-			token = response_dict["token"]
-			frappe.db.set_value("Shipping Provider", docname, "bearer_key", token)
-		else:
-			frappe.throw(f"Shiprocket: {response_dict['message']}")
-
-	except requests.exceptions.RequestException as e:
-		frappe.log_error(title="Shiprocket Authentication Error", message=str(e))
+		except requests.exceptions.RequestException as e:
+			frappe.log_error(title="Shiprocket Authentication Error", message=str(e))
