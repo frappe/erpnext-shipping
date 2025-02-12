@@ -55,8 +55,6 @@ def fetch_shipping_rates(
 
 		delivery_contact = get_contact(delivery_contact_name)
 
-		
-
 		letmeship = get_letmeship_utils()
 		letmeship_prices = (
 			letmeship.get_available_services(
