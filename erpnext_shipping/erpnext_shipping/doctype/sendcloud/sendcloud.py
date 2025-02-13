@@ -46,14 +46,13 @@ class SendCloudUtils:
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
-		total_weight = sum(parcel.get("weight", 0) for parcel in parcels) # idk about that
+		total_weight = max(parcel.get("weight", 0) for parcel in parcels)
 		max_length = max(parcel.get("length", 0) for parcel in parcels)
 		max_width = max(parcel.get("width", 0) for parcel in parcels)
 		max_height = max(parcel.get("height", 0) for parcel in parcels)
 
 		to_country = delivery_address.country_code.upper()
 		from_country = pickup_address.country_code.upper()
-
 
 		payload = {
 			 "to_country_code": to_country,
@@ -362,7 +361,8 @@ class SendCloudUtils:
 					 },
 		"order_number": f"{shipment}-{index}"
 		}
-	
+
+
 	# Parcel_items are not required for EU shipments, but they are mandatory for international shipments.
 
 	# def get_parcel_items(self, parcel, description_of_content, value_of_goods):
