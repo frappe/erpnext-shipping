@@ -15,7 +15,7 @@ from erpnext_shipping.erpnext_shipping.utils import (
 	get_contact,
 	match_parcel_service_type_carrier,
 	validate_parcels,
-	validate_phone
+	validate_phone,
 )
 
 
@@ -76,8 +76,10 @@ def fetch_shipping_rates(
 	if sendcloud_enabled:
 		sendcloud = SendCloudUtils()
 		sendcloud_prices = (
-			sendcloud.get_available_services(delivery_address=delivery_address,pickup_address=pickup_address,
- 			parcels=parcels) or []
+			sendcloud.get_available_services(
+				delivery_address=delivery_address, pickup_address=pickup_address, parcels=parcels
+			)
+			or []
 		)
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
@@ -91,7 +93,7 @@ def create_shipment(
 	shipment,
 	pickup_from_type,
 	delivery_to_type,
-	pickup_address_name, 
+	pickup_address_name,
 	delivery_address_name,
 	shipment_parcel,
 	description_of_content,
@@ -201,7 +203,7 @@ def print_shipping_label(shipment: str):
 			content = sendcloud.download_label(label_url)
 			file_url = save_label_as_attachment(shipment, content, i)
 			shipping_label.append(file_url)
-	
+
 	return shipping_label
 
 

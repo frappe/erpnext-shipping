@@ -87,7 +87,7 @@ class LetMeShipUtils:
 				for response in response_data["serviceList"]:
 					if self.check_weight(response):
 						continue
-					
+
 					available_service = self.get_service_dict(response)
 					available_services.append(available_service)
 
@@ -325,9 +325,11 @@ class LetMeShipUtils:
 			"phone": {"phoneNumber": contact.phone, "phoneNumberPrefix": contact.phone_prefix},
 			"email": contact.email_id,
 		}
+
 	def check_weight(self, service_response):
 		messages = service_response.get("messages", [])
-		return  any("maximum weight" in message.lower() for message in messages)
+		return any("maximum weight" in message.lower() for message in messages)
+
 
 def get_letmeship_utils() -> "LetMeShipUtils":
 	settings = frappe.get_single("LetMeShip")
@@ -340,4 +342,3 @@ def get_letmeship_utils() -> "LetMeShipUtils":
 		api_id=settings.api_id,
 		api_password=settings.get_password("api_password"),
 	)
-

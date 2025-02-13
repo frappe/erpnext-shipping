@@ -55,23 +55,20 @@ class SendCloudUtils:
 		from_country = pickup_address.country_code.upper()
 
 		payload = {
-			 "to_country_code": to_country,
-			 "from_country_code": from_country,
-			 "weight": {"value": total_weight, "unit": "kg"},
-			 "dimensions": {
-				 "length": max_length,
-				 "width": max_width,
-				 "height": max_height,
-				 "unit": "cm"}}
+			"to_country_code": to_country,
+			"from_country_code": from_country,
+			"weight": {"value": total_weight, "unit": "kg"},
+			"dimensions": {"length": max_length, "width": max_width, "height": max_height, "unit": "cm"},
+		}
 
 		try:
 			response = requests.post(
 				FETCH_SHIPPING_OPTIONS_URL,
 				json=payload,
 				auth=(self.api_key, self.api_secret),
-				headers={"Accept": "application/json", "Content-Type": "application/json"}
-				)
-			
+				headers={"Accept": "application/json", "Content-Type": "application/json"},
+			)
+
 			response_data = response.json()
 
 			if "error" in response_data:
@@ -86,32 +83,29 @@ class SendCloudUtils:
 				available_service = self.get_service_dict(service, parcels)
 				available_services.append(available_service)
 
-				
-
 			return available_services
 		except Exception:
 			show_error_alert("fetching SendCloud prices")
 
 	def create_shipment(
-	self,
-	shipment,
-	pickup_address,
-	pickup_contact,
-	delivery_address,
-	delivery_contact,
-	service_info,
-	shipment_parcel,
-	description_of_content,
-	value_of_goods,
-):
-	
+		self,
+		shipment,
+		pickup_address,
+		pickup_contact,
+		delivery_address,
+		delivery_contact,
+		service_info,
+		shipment_parcel,
+		description_of_content,
+		value_of_goods,
+	):
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
 		parcels = []
 		for i, parcel in enumerate(json.loads(shipment_parcel), start=1):
 			parcel_count = parcel.get("count", 1)
-			for _ in range(parcel_count):
+			for j in range(parcel_count):
 				parcel_data = self.get_parcel(
 					parcel,
 					shipment,
@@ -136,8 +130,10 @@ class SendCloudUtils:
 			"from_address": {
 				"name": f"{pickup_contact.first_name} {pickup_contact.last_name}",
 				"company_name": pickup_address.address_title,
-				"address_line_1": address or pickup_address.address_line1, # Using original address if parsing fails
-				"house_number": house_number or " ", # API requires a house number. If None, we use a U+200A HAIR SPACE to bypass validation without displaying a number
+				"address_line_1": address
+				or pickup_address.address_line1,  # Using original address if parsing fails
+				"house_number": house_number
+				or " ",  # API requires a house number. If None, we use a U+200A HAIR SPACE to bypass validation without displaying a number
 				"postal_code": pickup_address.pincode,
 				"city": pickup_address.city,
 				"country_code": pickup_address.country_code.upper(),
@@ -219,15 +215,17 @@ class SendCloudUtils:
 
 					parcels_data = response_data.get("data", {}).get("parcels", [])
 					if parcels_data:
-						parcel_data = parcels_data[0] 
-						shipments_results.append({
-							"shipment_id": str(parcel_data["id"]),
-							"awb_number": parcel_data.get("tracking_number", ""),
-							"tracking_url": parcel_data.get("tracking_url", ""),
-							"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
-							"carrier_service": service_info["service_name"],
-							"shipment_amount": service_info["total_price"],
-						})
+						parcel_data = parcels_data[0]
+						shipments_results.append(
+							{
+								"shipment_id": str(parcel_data["id"]),
+								"awb_number": parcel_data.get("tracking_number", ""),
+								"tracking_url": parcel_data.get("tracking_url", ""),
+								"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
+								"carrier_service": service_info["service_name"],
+								"shipment_amount": service_info["total_price"],
+							}
+						)
 				except Exception:
 					show_error_alert(f"creating SendCloud Shipment for parcel {parcel.get('order_number')}")
 			if shipments_results:
@@ -316,15 +314,14 @@ class SendCloudUtils:
 		"""Returns a dictionary with service info."""
 		available_service = frappe._dict()
 		available_service.service_provider = "SendCloud"
-		available_service.carrier = service["carrier"]["name"]  
-		available_service.service_name = service["product"]["name"]  
+		available_service.carrier = service["carrier"]["name"]
+		available_service.service_name = service["product"]["name"]
 		available_service.service_id = service["code"]
 		available_service.multicollo = service["functionalities"].get("multicollo", False)
-  
 
 		price = 0
 		if "quotes" in service and service["quotes"]:
-			price = float(service["quotes"][0]["price"]["total"]["value"])  
+			price = float(service["quotes"][0]["price"]["total"]["value"])
 			available_service.total_price = self.total_parcel_price(price, parcels)
 
 		return available_service
@@ -341,7 +338,7 @@ class SendCloudUtils:
 		pattern = r"\b\d+[/-]?\w*(?:-\d+\w*)?\b"
 		match = re.search(pattern, address)
 		if match:
-			house_number = match.group(0)  
+			house_number = match.group(0)
 			cleaned_address = re.sub(pattern, "", address).strip()
 			return house_number, cleaned_address
 		else:
@@ -349,19 +346,15 @@ class SendCloudUtils:
 
 	def get_parcel(self, parcel, shipment, index, description_of_content, value_of_goods):
 		return {
-			 "dimensions": {
-				 "length": parcel.get("length", 0),
-				 "width": parcel.get("width", 0),
-				 "height": parcel.get("height", 0),
-				 "unit": "cm"
-				 },
-				 "weight": {
-					 "value": parcel.get("weight", 0),
-					 "unit": "kg"
-					 },
-		"order_number": f"{shipment}-{index}"
+			"dimensions": {
+				"length": parcel.get("length", 0),
+				"width": parcel.get("width", 0),
+				"height": parcel.get("height", 0),
+				"unit": "cm",
+			},
+			"weight": {"value": parcel.get("weight", 0), "unit": "kg"},
+			"order_number": f"{shipment}-{index}",
 		}
-
 
 	# Parcel_items are not required for EU shipments, but they are mandatory for international shipments.
 
@@ -382,4 +375,3 @@ class SendCloudUtils:
 	# 	}
 	# 	parcel_list.append(formatted_parcel)
 	# 	return parcel_list
-	
