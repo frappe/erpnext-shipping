@@ -163,7 +163,8 @@ class SendCloudUtils:
 					]
 					error_message = "\n".join(error_details)
 					frappe.msgprint(
-						_("Error occurred while creating shipment:\n{0}").format(error_message),
+						_("Error occurred while creating shipment: %(error_message)s")
+						% {"error_message": error_message},
 						indicator="red",
 						alert=True,
 					)
@@ -205,9 +206,13 @@ class SendCloudUtils:
 						]
 						error_message = "\n".join(error_details)
 						frappe.msgprint(
-							_("Error occurred while creating shipment for parcel {0}:\n{1}").format(
-								parcel.get("order_number"), error_message
-							),
+							_(
+								"Error occurred while creating shipment for parcel %(order_number)s:\n%(error_message)s"
+							)
+							% {
+								"order_number": parcel.get("order_number"),
+								"error_message": error_message,
+							},
 							indicator="red",
 							alert=True,
 						)

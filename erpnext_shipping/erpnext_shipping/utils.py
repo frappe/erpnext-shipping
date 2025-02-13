@@ -51,16 +51,16 @@ def validate_address(address):
 def validate_parcels(parcels):
 	for parcel in parcels:
 		if parcel.get("length", 0) < 1:
-			frappe.throw("Parcel length must be greater than 1.")
+			frappe.throw(_("Parcel length must be greater than 1."))
 		if parcel.get("width", 0) < 1:
-			frappe.throw("Parcel width must be greater than 1.")
+			frappe.throw(_("Parcel width must be greater than 1."))
 		if parcel.get("height", 0) < 1:
-			frappe.throw("Parcel height must be greater than 1.")
+			frappe.throw(_("Parcel height must be greater than 1."))
 
 
 def validate_phone(phone):
 	if not re.match(r"^\+(?!0)\d+$", phone):
-		frappe.throw("Company contact phone must start with '+' and contain up to 4 digits in the prefix.")
+		frappe.throw(_("Company contact phone must start with '+' and contain up to 4 digits in the prefix."))
 
 
 def get_country_code(country_name):
