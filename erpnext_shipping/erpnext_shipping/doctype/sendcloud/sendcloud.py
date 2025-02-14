@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import json
-import re
 
 import frappe
 import requests
@@ -46,7 +45,7 @@ class SendCloudUtils:
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
-		total_weight = max(parcel.get("weight", 0) for parcel in parcels)
+		max_weight = max(parcel.get("weight", 0) for parcel in parcels)
 		max_length = max(parcel.get("length", 0) for parcel in parcels)
 		max_width = max(parcel.get("width", 0) for parcel in parcels)
 		max_height = max(parcel.get("height", 0) for parcel in parcels)
@@ -57,7 +56,7 @@ class SendCloudUtils:
 		payload = {
 			"to_country_code": to_country,
 			"from_country_code": from_country,
-			"weight": {"value": total_weight, "unit": "kg"},
+			"weight": {"value": max_weight, "unit": "kg"},
 			"dimensions": {"length": max_length, "width": max_width, "height": max_height, "unit": "cm"},
 		}
 
@@ -96,8 +95,6 @@ class SendCloudUtils:
 		delivery_contact,
 		service_info,
 		shipment_parcel,
-		description_of_content,
-		value_of_goods,
 	):
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
@@ -110,8 +107,6 @@ class SendCloudUtils:
 					parcel,
 					shipment,
 					i,
-					description_of_content,
-					value_of_goods,
 				)
 				parcels.append(parcel_data)
 
@@ -203,13 +198,9 @@ class SendCloudUtils:
 						]
 						error_message = "\n".join(error_details)
 						frappe.msgprint(
-							_(
-								"Error occurred while creating shipment for parcel %(order_number)s:\n%(error_message)s"
-							)
-							% {
-								"order_number": parcel.get("order_number"),
-								"error_message": error_message,
-							},
+							_("Error occurred while creating shipment for parcel {0}:\n{1}").format(
+								parcel.get("order_number"), error_message
+							),
 							indicator="red",
 							alert=True,
 						)
@@ -292,9 +283,12 @@ class SendCloudUtils:
 				tracking_data = json.loads(tracking_data_response.text)
 				tracking_data_parcel = tracking_data["parcel"]
 				tracking_data_parcel_status = tracking_data_parcel["status"]["message"]
-
-				tracking_urls.append(tracking_data_parcel.get("tracking_url", ""))
-				awb_number.append(tracking_data_parcel.get("tracking_number", ""))
+				tracking_url = tracking_data_parcel.get("tracking_url")
+				if tracking_url:
+					tracking_urls.append(tracking_url)
+				tracking_number = tracking_data_parcel.get("tracking_number")
+				if tracking_number:
+					awb_number.append(tracking_number)
 				tracking_status.append(tracking_data_parcel_status)
 				tracking_status_info.append(tracking_data_parcel_status)
 			return {
@@ -336,7 +330,7 @@ class SendCloudUtils:
 		else:
 			return carrier_name.upper() if post_or_get == "get" else carrier_name.lower()
 
-	def get_parcel(self, parcel, shipment, index, description_of_content, value_of_goods):
+	def get_parcel(self, shipment, parcel, index):
 		return {
 			"dimensions": {
 				"length": parcel.get("length", 0),
@@ -344,6 +338,6 @@ class SendCloudUtils:
 				"height": parcel.get("height", 0),
 				"unit": "cm",
 			},
-			"weight": {"value": parcel.get("weight", 0), "unit": "kg"},
+			"weight": {"value": flt(parcel.get("weight", 0), WEIGHT_DECIMALS), "unit": "kg"},
 			"order_number": f"{shipment}-{index}",
 		}
