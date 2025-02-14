@@ -342,23 +342,3 @@ class SendCloudUtils:
 			"weight": {"value": parcel.get("weight", 0), "unit": "kg"},
 			"order_number": f"{shipment}-{index}",
 		}
-
-	# Parcel_items are not required for EU shipments, but they are mandatory for international shipments.
-
-	# def get_parcel_items(self, parcel, description_of_content, value_of_goods):
-	# 	parcel_list = []
-	# 	formatted_parcel = {
-	# 		"description": description_of_content,
-	# 		"quantity": parcel.get("count", 1),
-	# 		"weight": {
-	# 			"value": flt(parcel.get("weight"), WEIGHT_DECIMALS),
-	# 			"unit": "kg"
-	# 		},
-	# 		"price": {
-	# 			"value": flt(value_of_goods, CURRENCY_DECIMALS),
-	# 			"currency": "EUR"
-	# 		},
-	# 		"hs_code": "620520"
-	# 	}
-	# 	parcel_list.append(formatted_parcel)
-	# 	return parcel_list
