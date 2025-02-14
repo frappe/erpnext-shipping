@@ -12,8 +12,7 @@ frappe.ui.form.on("Shipment", {
 						),
 						function () {
 							frm.events.fetch_shipping_rates(frm);
-						},
-						function () {}
+						}
 					);
 				} else {
 					frm.events.fetch_shipping_rates(frm);
