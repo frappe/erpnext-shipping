@@ -46,7 +46,7 @@ class SendCloudUtils:
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
-		total_weight = sum(parcel.get("weight", 0) for parcel in parcels)  # idk about that
+		total_weight = max(parcel.get("weight", 0) for parcel in parcels)
 		max_length = max(parcel.get("length", 0) for parcel in parcels)
 		max_width = max(parcel.get("width", 0) for parcel in parcels)
 		max_height = max(parcel.get("height", 0) for parcel in parcels)
