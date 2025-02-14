@@ -5,7 +5,18 @@ frappe.ui.form.on("Shipment", {
 	refresh: function (frm) {
 		if (frm.doc.docstatus === 1 && !frm.doc.shipment_id) {
 			frm.add_custom_button(__("Fetch Shipping Rates"), function () {
-				return frm.events.fetch_shipping_rates(frm);
+				if (frm.doc.shipment_parcel.length > 1) {
+					frappe.confirm(
+						__(
+							"If your shipment contains packages with varying weights, the estimated shipping rates may differ from the final price charged by your carrier. Do you wish to proceed?"
+						),
+						function () {
+							frm.events.fetch_shipping_rates(frm);
+						}
+					);
+				} else {
+					frm.events.fetch_shipping_rates(frm);
+				}
 			});
 		}
 		if (frm.doc.shipment_id) {
