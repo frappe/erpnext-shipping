@@ -19,7 +19,16 @@ TEST_BASE_URL = "https://api.test.letmeship.com/v1"
 
 
 class LetMeShip(Document):
-	pass
+	def validate(self):
+		if not self.enabled:
+			return
+
+		utils = LetMeShipUtils(
+			base_url=TEST_BASE_URL if self.use_test_environment else PROD_BASE_URL,
+			api_id=self.api_id,
+			api_password=self.get_password("api_password"),
+		)
+		utils.request("GET", "documents")  # check if the API and credentials are working
 
 
 class LetMeShipUtils:
