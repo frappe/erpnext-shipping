@@ -1,5 +1,7 @@
 # Copyright (c) 2020, Frappe Technologies and contributors
 # For license information, please see license.txt
+import re
+
 import frappe
 from frappe import _
 from frappe.utils.data import get_link_to_form
@@ -44,6 +46,21 @@ def validate_address(address):
 
 	if not address.pincode or address.pincode.strip() == "":
 		frappe.throw(_("Please add a valid pincode in Address {0}.").format(address.address_title))
+
+
+def validate_parcels(parcels):
+	for parcel in parcels:
+		if parcel.get("length", 0) < 1:
+			frappe.throw(_("Parcel length must be greater than 1."))
+		if parcel.get("width", 0) < 1:
+			frappe.throw(_("Parcel width must be greater than 1."))
+		if parcel.get("height", 0) < 1:
+			frappe.throw(_("Parcel height must be greater than 1."))
+
+
+def validate_phone(phone):
+	if not re.match(r"^\+(?!0)\d+$", phone):
+		frappe.throw(_("Company contact phone must start with '+' and contain up to 4 digits in the prefix."))
 
 
 def get_country_code(country_name):
