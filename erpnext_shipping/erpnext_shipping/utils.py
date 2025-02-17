@@ -48,19 +48,32 @@ def validate_address(address):
 		frappe.throw(_("Please add a valid pincode in Address {0}.").format(address.address_title))
 
 
-def validate_parcels(parcels):
-	for parcel in parcels:
-		if parcel.get("length", 0) < 1:
-			frappe.throw(_("Parcel length must be greater than 1."))
-		if parcel.get("width", 0) < 1:
-			frappe.throw(_("Parcel width must be greater than 1."))
-		if parcel.get("height", 0) < 1:
-			frappe.throw(_("Parcel height must be greater than 1."))
+def validate_parcels(doc, method=None):
+	parcels = doc.get("shipment_parcel")
+
+	if parcels:
+		for parcel in parcels:
+			if (parcel.get("length") or 0) < 1:
+				frappe.throw(_("Parcel length must be greater than 1."))
+			if (parcel.get("width") or 0) < 1:
+				frappe.throw(_("Parcel width must be greater than 1."))
+			if (parcel.get("height") or 0) < 1:
+				frappe.throw(_("Parcel height must be greater than 1."))
 
 
-def validate_phone(phone):
-	if not re.match(r"^\+(?!0)\d+$", phone):
-		frappe.throw(_("Company contact phone must start with '+' and contain up to 4 digits in the prefix."))
+def validate_phone(doc, method=None):
+	pickup_type = doc.get("pickup_from_type")
+
+	if pickup_type == "Company":
+		user = doc.get("pickup_contact_person")
+		phone_number = frappe.db.get_value("User", user, "phone", as_dict=False)
+
+	else:
+		user = doc.get("pickup_contact_name")
+		phone_number = frappe.db.get_value("Contact", user, "phone", as_dict=False)
+
+	if not re.match(r"^\+(?!0)\d+$", phone_number):
+		frappe.throw(_("Pickup contact phone must start with a '+' followed by one or more digits."))
 
 
 def get_country_code(country_name):

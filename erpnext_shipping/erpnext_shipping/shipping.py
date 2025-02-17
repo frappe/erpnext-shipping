@@ -40,8 +40,6 @@ def fetch_shipping_rates(
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
 
-	validate_parcels(parcels)
-
 	if letmeship_enabled:
 		pickup_contact = None
 		delivery_contact = None
@@ -50,8 +48,6 @@ def fetch_shipping_rates(
 		else:
 			pickup_contact = get_company_contact(user=pickup_contact_name)
 			pickup_contact.email_id = pickup_contact.pop("email", None)
-			phone = pickup_contact.get("phone")
-			validate_phone(phone)
 
 		delivery_contact = get_contact(delivery_contact_name)
 
