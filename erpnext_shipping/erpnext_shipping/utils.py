@@ -72,6 +72,9 @@ def validate_phone(doc, method=None):
 		user = doc.get("pickup_contact_name")
 		phone_number = frappe.db.get_value("Contact", user, "phone", as_dict=False)
 
+	if not phone_number:
+		frappe.throw(_("Pickup contact phone is required."))
+
 	if not re.match(r"^\+(?!0)\d+$", phone_number):
 		frappe.throw(_("Pickup contact phone must start with a '+' followed by one or more digits."))
 
