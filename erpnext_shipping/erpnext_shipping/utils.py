@@ -62,11 +62,8 @@ def validate_parcels(doc, method=None):
 
 
 def validate_phone(doc, method=None):
-	pickup_type = doc.get("pickup_from_type")
-
-	if pickup_type == "Company":
-		user = doc.get("pickup_contact_person")
-		phone_number = frappe.db.get_value("User", user, "phone", as_dict=False)
+	if doc.pickup_type == "Company":
+		phone_number = frappe.db.get_value("User", doc.pickup_contact_person, "phone", as_dict=False)
 
 	else:
 		phone_number = frappe.db.get_value("Contact", doc.pickup_contact_name, "phone")
