@@ -72,7 +72,7 @@ def validate_phone(doc, method=None):
 		frappe.throw(_("Pickup contact phone is required."))
 
 	if not re.match(r"^\+(?!0)\d+$", phone_number):
-		frappe.throw(_("Pickup contact phone must start with a '+' followed by one or more digits."))
+		frappe.throw(_("Pickup contact phone must consist of a '+' followed by one or more digits."))
 
 
 def get_country_code(country_name):
