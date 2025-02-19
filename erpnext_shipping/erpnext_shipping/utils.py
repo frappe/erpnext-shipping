@@ -49,16 +49,16 @@ def validate_address(address):
 
 
 def validate_parcels(doc, method=None):
-	parcels = doc.get("shipment_parcel")
+	if doc.docstatus != 0:
+		return
 
-	if parcels:
-		for parcel in parcels:
-			if (parcel.get("length") or 0) < 1:
-				frappe.throw(_("Parcel length must be greater than 1."))
-			if (parcel.get("width") or 0) < 1:
-				frappe.throw(_("Parcel width must be greater than 1."))
-			if (parcel.get("height") or 0) < 1:
-				frappe.throw(_("Parcel height must be greater than 1."))
+	for parcel in doc.shipment_parcel:
+		if (parcel.get("length") or 0) < 1:
+			frappe.throw(_("Parcel length must be greater than 1."))
+		if (parcel.get("width") or 0) < 1:
+			frappe.throw(_("Parcel width must be greater than 1."))
+		if (parcel.get("height") or 0) < 1:
+			frappe.throw(_("Parcel height must be greater than 1."))
 
 
 def validate_phone(doc, method=None):
