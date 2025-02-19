@@ -53,12 +53,13 @@ def validate_parcels(doc, method=None):
 		return
 
 	for parcel in doc.shipment_parcel:
-		if (parcel.length or 0) < 1:
-			frappe.throw(_("Parcel length must be at least 1."))
-		if (parcel.width or 0) < 1:
-			frappe.throw(_("Parcel width must be at least 1."))
-		if (parcel.height or 0) < 1:
-			frappe.throw(_("Parcel height must be at least 1."))
+		for field in ("length", "width", "height"):
+			if (parcel.get(field) or 0) < 1:
+				frappe.throw(
+					_("Parcel row {0}: {field_label} must be at least 1 cm.").format(
+						parcel.idx, field_label=_(parcel.meta.get_label(field))
+					)
+				)
 
 
 def validate_phone(doc, method=None):
