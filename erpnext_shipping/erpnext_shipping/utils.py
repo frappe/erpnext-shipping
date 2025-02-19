@@ -56,8 +56,8 @@ def validate_parcels(doc, method=None):
 		for field in ("length", "width", "height"):
 			if (parcel.get(field) or 0) < 1:
 				frappe.throw(
-					_("Parcel row {0}: {field_label} must be at least 1 cm.").format(
-						parcel.idx, field_label=_(parcel.meta.get_label(field))
+					_("Parcel row {idx}: {field_label} must be at least 1 cm.").format(
+						idx=parcel.idx, field_label=_(parcel.meta.get_label(field))
 					)
 				)
 
