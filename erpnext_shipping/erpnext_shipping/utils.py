@@ -53,17 +53,17 @@ def validate_parcels(doc, method=None):
 		return
 
 	for parcel in doc.shipment_parcel:
-		if (parcel.get("length") or 0) < 1:
-			frappe.throw(_("Parcel length must be greater than 1."))
-		if (parcel.get("width") or 0) < 1:
-			frappe.throw(_("Parcel width must be greater than 1."))
-		if (parcel.get("height") or 0) < 1:
-			frappe.throw(_("Parcel height must be greater than 1."))
+		if (parcel.length or 0) < 1:
+			frappe.throw(_("Parcel length must be at least 1."))
+		if (parcel.width or 0) < 1:
+			frappe.throw(_("Parcel width must be at least 1."))
+		if (parcel.height or 0) < 1:
+			frappe.throw(_("Parcel height must be at least 1."))
 
 
 def validate_phone(doc, method=None):
 	if doc.pickup_type == "Company":
-		phone_number = frappe.db.get_value("User", doc.pickup_contact_person, "phone", as_dict=False)
+		phone_number = frappe.db.get_value("User", doc.pickup_contact_person, "phone")
 
 	else:
 		phone_number = frappe.db.get_value("Contact", doc.pickup_contact_name, "phone")
