@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import json
+import re
 
 import frappe
 import requests
@@ -110,6 +111,8 @@ class SendCloudUtils:
 				)
 				parcels.append(parcel_data)
 
+		house_number, address = self.extract_house_number(pickup_address.address_line1)
+
 		payload = {
 			"parcels": parcels,
 			"to_address": {
@@ -124,8 +127,10 @@ class SendCloudUtils:
 			"from_address": {
 				"name": f"{pickup_contact.first_name} {pickup_contact.last_name}",
 				"company_name": pickup_address.address_title,
-				"address_line_1": pickup_address.address_line1,
-				"house_number": " ",  # API requires a house number, using a U+200A HAIR SPACE to bypass validation
+				"address_line_1": address
+				or pickup_address.address_line1,  # Using original address if parsing fails
+				"house_number": house_number
+				or " ",  # API requires a house number. If None, we use a U+200A HAIR SPACE to bypass validation without displaying a number
 				"postal_code": pickup_address.pincode,
 				"city": pickup_address.city,
 				"country_code": pickup_address.country_code.upper(),
@@ -333,7 +338,7 @@ class SendCloudUtils:
 		else:
 			return carrier_name.upper() if post_or_get == "get" else carrier_name.lower()
 
-	def get_parcel(self, shipment, parcel, index):
+	def get_parcel(self, parcel, shipment, index):
 		return {
 			"dimensions": {
 				"length": parcel.get("length", 0),
@@ -344,3 +349,13 @@ class SendCloudUtils:
 			"weight": {"value": flt(parcel.get("weight", 0), WEIGHT_DECIMALS), "unit": "kg"},
 			"order_number": f"{shipment}-{index}",
 		}
+
+	def extract_house_number(self, address):
+		pattern = r"\b\d+[/-]?\w*(?:-\d+\w*)?\b"
+		match = re.search(pattern, address)
+		if match:
+			house_number = match.group(0)
+			cleaned_address = re.sub(pattern, "", address).strip()
+			return house_number, cleaned_address
+		else:
+			return None, None
