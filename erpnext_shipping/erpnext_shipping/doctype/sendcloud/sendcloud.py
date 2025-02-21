@@ -219,8 +219,11 @@ class SendCloudUtils:
 		if "quotes" in service and service["quotes"]:
 			price = float(service["quotes"][0]["price"]["total"]["value"])
 			available_service.total_price = self.total_parcel_price(price, parcels)
+<<<<<<< HEAD
 			available_service.currency = service["quotes"][0]["price"]["total"]["currency"]
 >>>>>>> 2a46595 (feat: add currency for LetMeShip and SendCloud)
+=======
+>>>>>>> 1bcb544 (Revert "feat: add currency for LetMeShip and SendCloud")
 
 		return available_service
 
