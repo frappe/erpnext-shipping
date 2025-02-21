@@ -209,10 +209,18 @@ class SendCloudUtils:
 		available_service.carrier = self.get_carrier(service["carrier"], post_or_get="get")
 		available_service.service_name = service["name"]
 
+<<<<<<< HEAD
 		price = country["price"] or sum(price_part["value"] for price_part in country["price_breakdown"])
 		available_service.total_price = self.total_parcel_price(price, parcels)
 
 		available_service.service_id = service["id"]
+=======
+		price = 0
+		if "quotes" in service and service["quotes"]:
+			price = float(service["quotes"][0]["price"]["total"]["value"])
+			available_service.total_price = self.total_parcel_price(price, parcels)
+			available_service.currency = service["quotes"][0]["price"]["total"]["currency"]
+>>>>>>> 2a46595 (feat: add currency for LetMeShip and SendCloud)
 
 		return available_service
 
