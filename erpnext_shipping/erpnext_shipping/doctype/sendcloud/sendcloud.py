@@ -327,7 +327,6 @@ class SendCloudUtils:
 		if "quotes" in service and service["quotes"]:
 			price = float(service["quotes"][0]["price"]["total"]["value"])
 			available_service.total_price = self.total_parcel_price(price, parcels)
-			available_service.currency = service["quotes"][0]["price"]["total"]["currency"]
 
 		return available_service
 
