@@ -282,6 +282,7 @@ class LetMeShipUtils:
 		available_service.real_weight = price_info["realWeight"]
 		available_service.total_price = price_info["netPrice"]
 		available_service.price_info = price_info
+		available_service.currency = "USD"
 		return available_service
 
 	def set_letmeship_specific_fields(self, pickup_contact, delivery_contact):
