@@ -200,9 +200,6 @@ shipping_custom_fields = {
 
 doc_events = {
 	"Shipment": {
-		"validate": [
-			"erpnext_shipping.erpnext_shipping.utils.validate_parcels",
-			"erpnext_shipping.erpnext_shipping.utils.validate_phone",
-		]
+		"validate": "erpnext_shipping.erpnext_shipping.utils.validate_parcels",
 	},
 }
