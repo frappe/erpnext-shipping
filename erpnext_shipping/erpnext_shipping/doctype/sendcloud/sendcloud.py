@@ -323,11 +323,13 @@ class SendCloudUtils:
 		available_service.service_id = service["code"]
 		available_service.multicollo = service["functionalities"].get("multicollo", False)
 
-		price = 0
-		if "quotes" in service and service["quotes"]:
-			price = float(service["quotes"][0]["price"]["total"]["value"])
-			available_service.total_price = self.total_parcel_price(price, parcels)
-			available_service.currency = service["quotes"][0]["price"]["total"]["currency"]
+		quotes = service.get("quotes", [])
+		if quotes:
+			price_data = quotes[0].get("price", {}).get("total", {})
+			available_service.total_price = self.total_parcel_price(
+				float(price_data.get("value", 0)), parcels
+			)
+			available_service.currency = price_data.get("currency")
 
 		return available_service
 
