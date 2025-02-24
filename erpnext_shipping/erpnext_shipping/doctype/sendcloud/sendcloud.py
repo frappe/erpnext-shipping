@@ -210,6 +210,7 @@ class SendCloudUtils:
 		available_service.service_name = service["name"]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		price = country["price"] or sum(price_part["value"] for price_part in country["price_breakdown"])
 		available_service.total_price = self.total_parcel_price(price, parcels)
 
@@ -228,6 +229,15 @@ class SendCloudUtils:
 =======
 			available_service.currency = service["quotes"][0]["price"]["total"]["currency"]
 >>>>>>> 99ebac3 (fix: changes without html formatting)
+=======
+		quotes = service.get("quotes", [])
+		if quotes:
+			price_data = quotes[0].get("price", {}).get("total", {})
+			available_service.total_price = self.total_parcel_price(
+				float(price_data.get("value", 0)), parcels
+			)
+			available_service.currency = price_data.get("currency")
+>>>>>>> 4dce46b (refactor: sendcloud price parsing)
 
 		return available_service
 
