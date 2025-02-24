@@ -127,10 +127,8 @@ frappe.ui.form.on("Shipment", {
 	},
 
 	update_tracking: function (frm, service_provider, shipment_id) {
-		let delivery_notes = [];
-		(frm.doc.shipment_delivery_note || []).forEach((d) => {
-			delivery_notes.push(d.delivery_note);
-		});
+		const delivery_notes = frm.doc.shipment_delivery_note.map((d) => d.delivery_note);
+
 		frappe.call({
 			method: "erpnext_shipping.erpnext_shipping.shipping.update_tracking",
 			freeze: true,
@@ -175,10 +173,7 @@ function select_from_available_services(frm, available_services) {
 		],
 	});
 
-	let delivery_notes = [];
-	(frm.doc.shipment_delivery_note || []).forEach((d) => {
-		delivery_notes.push(d.delivery_note);
-	});
+	const delivery_notes = frm.doc.shipment_delivery_note.map((d) => d.delivery_note);
 
 	dialog.fields_dict.available_services.$wrapper.html(
 		frappe.render_template("shipment_service_selector", {
