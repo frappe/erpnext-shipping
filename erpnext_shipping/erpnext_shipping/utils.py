@@ -71,7 +71,7 @@ def validate_phone(doc, method=None):
 	if not phone_number:
 		frappe.throw(_("Pickup contact phone is required."))
 
-	if not re.match(r"^\+(?!0)\d+$", phone_number):
+	if not re.match(r"^\+(?![\s0])[\d\s]+\d$", phone_number):
 		frappe.throw(_("Pickup contact phone must consist of a '+' followed by one or more digits."))
 
 
