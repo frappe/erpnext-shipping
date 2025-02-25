@@ -14,8 +14,6 @@ from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
 	match_parcel_service_type_carrier,
-	validate_parcels,
-	validate_phone,
 )
 
 
