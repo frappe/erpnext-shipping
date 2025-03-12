@@ -18,5 +18,3 @@ def make_property_setters(property_setter):
 			fieldtype = doctype_properties[prop_setter[2]] if prop_setter[2] != "field_order" else "Data"
 
 		make_property_setter(*prop_setter[:4], fieldtype, for_doctype=for_doctype)
-
-	# frappe.db.commit()  # nosemgrep
