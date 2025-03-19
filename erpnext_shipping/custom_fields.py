@@ -74,3 +74,8 @@ def get_custom_fields():
 			},
 		]
 	}
+
+
+def get_fields_for_patch(doctype: str, fieldnames: list[str]) -> dict[str, list[dict]]:
+	"""Return specific fields that are needed for a patch."""
+	return {doctype: [field for field in get_custom_fields()[doctype] if field["fieldname"] in fieldnames]}
