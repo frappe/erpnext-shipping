@@ -7,8 +7,8 @@ def identity(value):
 	return value
 
 
-def make_property_setters(property_setter):
-	for prop_setter in property_setter:
+def make_property_setters(property_setters):
+	for prop_setter in property_setters:
 		if prop_setter[1]:
 			for_doctype = False
 			fieldtype = docfield_properties[prop_setter[2]]
