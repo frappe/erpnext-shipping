@@ -10,6 +10,7 @@ import requests
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils.data import get_link_to_form
+from requests.exceptions import HTTPError
 
 from erpnext_shipping.erpnext_shipping.utils import show_error_alert
 
@@ -28,7 +29,18 @@ class LetMeShip(Document):
 			api_id=self.api_id,
 			api_password=self.get_password("api_password"),
 		)
-		utils.request("GET", "documents")  # check if the API and credentials are working
+
+		try:
+			utils.request("GET", "documents")  # check if the API and credentials are working
+		except HTTPError as e:
+			if e.response.status_code == 401:
+				frappe.throw(_("Invalid API ID or Password"))
+			else:
+				frappe.throw(
+					_("There was an error with the LetMeShip API. HTTP Status Code: {0}").format(
+						e.response.status_code
+					)
+				)
 
 
 class LetMeShipUtils:
@@ -51,6 +63,8 @@ class LetMeShipUtils:
 			params=params,
 			json=json,
 		)
+
+		response.raise_for_status()
 
 		data = response.json()
 		if "status" in data and data["status"]["code"] != "0":
@@ -282,6 +296,7 @@ class LetMeShipUtils:
 		available_service.real_weight = price_info["realWeight"]
 		available_service.total_price = price_info["netPrice"]
 		available_service.price_info = price_info
+		available_service.currency = "EUR"
 		return available_service
 
 	def set_letmeship_specific_fields(self, pickup_contact, delivery_contact):
