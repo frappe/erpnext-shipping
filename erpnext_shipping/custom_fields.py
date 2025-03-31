@@ -50,7 +50,7 @@ def get_custom_fields():
 			},
 			{
 				"fieldname": "tracking_url",
-				"label": _("Tracking URL TEST"),
+				"label": _("Tracking URL"),
 				"fieldtype": "Small Text",
 				"read_only": 1,
 				"translatable": 0,
