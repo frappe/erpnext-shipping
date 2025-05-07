@@ -10,6 +10,10 @@ from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	get_letmeship_utils,
 )
 from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCLOUD_PROVIDER, SendCloudUtils
+from erpnext_shipping.erpnext_shipping.doctype.one_world_express.one_world_express import (
+	ONEWORLD_PROVIDER,
+	get_one_world_utils,
+)
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
@@ -34,6 +38,7 @@ def fetch_shipping_rates(
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
+	oneworld_enabled = frappe.db.get_single_value("One World Express", "enabled")
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -77,6 +82,19 @@ def fetch_shipping_rates(
 		)
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
+
+	if oneworld_enabled:
+		oneworld = get_one_world_utils()
+		oneworld_prices = (
+			oneworld.get_available_services(
+				delivery_address=delivery_address,
+				pickup_address=pickup_address,
+				parcels=parcels
+			)
+			or []
+		)
+		oneworld_prices = match_parcel_service_type_carrier(oneworld_prices, "carrier", "service_name")
+		shipment_prices += oneworld_prices
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
@@ -148,6 +166,18 @@ def create_shipment(
 			service_info=service_info,
 		)
 
+	if service_info["service_provider"] == ONEWORLD_PROVIDER:
+		oneworld = get_one_world_utils()
+		shipment_info = oneworld.create_shipment(
+			shipment=shipment,
+			delivery_address=delivery_address,
+			pickup_address=pickup_address,
+			pickup_contact=pickup_contact,
+			shipment_parcel=shipment_parcel,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+		)
+
 	if shipment_info:
 		shipment = frappe.get_doc("Shipment", shipment)
 		shipment.db_set(
@@ -197,6 +227,9 @@ def print_shipping_label(shipment: str):
 			content = sendcloud.download_label(label_url)
 			file_url = save_label_as_attachment(shipment, content, i)
 			shipping_label.append(file_url)
+	elif service_provider == ONEWORLD_PROVIDER:
+		oneworld = get_one_world_utils()
+		shipping_label = oneworld.get_label(shipment_id)
 
 	return shipping_label
 
@@ -233,6 +266,9 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
+	elif service_provider == ONEWORLD_PROVIDER:
+		oneworld = get_one_world_utils()
+		tracking_data = oneworld.get_tracking_data(shipment_id)
 
 	if not tracking_data:
 		return
