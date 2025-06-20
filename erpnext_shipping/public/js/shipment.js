@@ -80,6 +80,10 @@ frappe.ui.form.on("Shipment", {
 							: frm.doc.pickup_contact_name,
 					delivery_contact_name: frm.doc.delivery_contact_name,
 					value_of_goods: frm.doc.value_of_goods,
+					pickup_company: frm.doc.pickup_company,
+					total_weight: frm.doc.total_weight,
+					pickup_contact: frm.doc.pickup_contact,
+					delivery_contact: frm.doc.delivery_contact,
 				},
 				callback: function (r) {
 					if (r.message && r.message.length) {
@@ -138,6 +142,7 @@ frappe.ui.form.on("Shipment", {
 				shipment_id: shipment_id,
 				service_provider: service_provider,
 				delivery_notes: delivery_notes,
+				awb_number: frm.doc.awb_number,
 			},
 			callback: function (r) {
 				if (!r.exc) {
@@ -211,6 +216,8 @@ function select_from_available_services(frm, available_services) {
 				value_of_goods: frm.doc.value_of_goods,
 				service_data: service_data,
 				delivery_notes: delivery_notes,
+				pickup_company: frm.doc.pickup_company,
+				total_weight: frm.doc.total_weight,
 			},
 			callback: function (r) {
 				if (!r.exc) {
