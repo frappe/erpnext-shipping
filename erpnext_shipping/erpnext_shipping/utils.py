@@ -148,7 +148,7 @@ def update_tracking_info_daily():
 			shipment.name,
 			shipment_doc.service_provider,
 			shipment_doc.shipment_id,
-			shipment_doc.shipment_delivery_notes,
+			shipment_doc.shipment_delivery_note,
 		)
 
 		if tracking_info:
