@@ -123,6 +123,7 @@ class SendCloudUtils:
 				"city": delivery_address.city,
 				"country_code": delivery_address.country_code.upper(),
 				"phone_number": delivery_contact.phone,
+				"email": delivery_contact.email_id,
 			},
 			"from_address": {
 				"name": f"{pickup_contact.first_name} {pickup_contact.last_name}",
@@ -135,6 +136,7 @@ class SendCloudUtils:
 				"city": pickup_address.city,
 				"country_code": pickup_address.country_code.upper(),
 				"phone_number": pickup_contact.phone,
+				"email": pickup_contact.email_id,
 			},
 			"ship_with": {
 				"type": "shipping_option_code",
