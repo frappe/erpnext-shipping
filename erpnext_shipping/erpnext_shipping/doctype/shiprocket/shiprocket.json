@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{company}-{api_id}",
+ "creation": "2025-02-24 11:35:23.186793",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "api_id",
+  "api_password",
+  "bearer_key",
+  "column_break_xekv",
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "mandatory_depends_on": "eval:doc.enabled",
+   "options": "Company"
+  },
+  {
+   "fieldname": "api_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "API ID",
+   "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "fieldname": "api_password",
+   "fieldtype": "Password",
+   "label": "API Password",
+   "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "fieldname": "column_break_xekv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": " Enabled"
+  },
+  {
+   "fieldname": "bearer_key",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Bearer Key",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-03-11 11:49:44.585356",
+ "modified_by": "Administrator",
+ "module": "ERPNext Shipping",
+ "name": "Shiprocket",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
