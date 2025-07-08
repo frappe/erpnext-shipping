@@ -1,7 +1,6 @@
 # Copyright (c) 2020, Frappe Technologies and contributors
 # For license information, please see license.txt
 import re
-
 import frappe
 from frappe import _
 from frappe.utils.data import get_link_to_form
@@ -27,6 +26,9 @@ def get_address(address_name):
 			"city",
 			"pincode",
 			"country",
+			"state",
+			"phone",
+			"email_id",
 		],
 		as_dict=1,
 	)
@@ -42,7 +44,7 @@ def get_address(address_name):
 
 def validate_address(address):
 	if not address.country:
-		frappe.throw(f"Please add a valid country in Address {address.address_title}.")
+		frappe.throw(_(f"Please add a valid country in Address {address.address_title}."))
 
 	if not address.pincode or address.pincode.strip() == "":
 		frappe.throw(_("Please add a valid pincode in Address {0}.").format(address.address_title))
@@ -134,10 +136,101 @@ def update_tracking_info_daily():
 			shipment.name,
 			shipment_doc.service_provider,
 			shipment_doc.shipment_id,
-			shipment_doc.shipment_delivery_note,
+			[entry.delivery_note for entry in shipment_doc.shipment_delivery_note],
+			shipment_doc.awb_number,
 		)
 
 		if tracking_info:
 			fields = ["awb_number", "tracking_status", "tracking_status_info", "tracking_url"]
 			for field in fields:
 				shipment_doc.db_set(field, tracking_info.get(field))
+
+
+def get_enabled_doc_for_company(doctype: str, company: str) -> dict | None:
+
+	filters = {
+		"company": company,
+		"enabled": True,
+	}
+
+	if frappe.db.exists(doctype, filters):
+		return frappe.get_doc(doctype, filters)
+
+	return None
+
+
+def handle_shipping_error(
+	name: str,
+	provider: str,
+	message: str,
+	exception: Exception,
+	raise_exception: bool,
+) -> None:
+	frappe.log_error(message, str(exception))
+	throw_shipping_error(
+		name,
+		provider,
+		f"{message}: {str(exception)}",
+		raise_exception,
+	)
+
+
+def throw_shipping_error(
+	doc_name: str,
+	provider: str,
+	message: str,
+	raise_exception: bool,
+) -> None:
+	"""
+	Raises a formatted Frappe validation error with a link
+	to disable the Shipping Provider.
+	"""
+	frappe.msgprint(
+		msg=_(
+			f"<b>{provider}:</b> {message}<br>"
+			f"Disable the {provider} Account if you need to continue without {provider}: "
+			f"{get_link_to_form(provider, doc_name)}"
+		),
+		raise_exception=raise_exception,
+	)
+
+
+def validate_enabled_service(doctype, name, company):
+	existing_doc = frappe.db.exists(
+		doctype,
+		{
+			"company": company,
+			"enabled": True,
+		},
+	)
+	if existing_doc and existing_doc != name:
+		frappe.msgprint(_(f"Only one {doctype} can be enabled at a time for the company <b>{company}</b>."))
+		return False
+
+	return True
+
+
+def save_label_as_attachment(
+	shipment: str,
+	content: bytes = None,
+	index: int = None,
+	url: str = None,
+) -> str:
+	"""Store label as attachment to Shipment and return the URL."""
+
+	attachment = frappe.new_doc("File")
+
+	if index is not None:
+		attachment.file_name = f"label_{shipment}_{index}.pdf"
+	else:
+		attachment.file_name = f"label_{shipment}.pdf"
+
+	attachment.content = content
+	attachment.folder = "Home/Attachments"
+	attachment.attached_to_doctype = "Shipment"
+	attachment.attached_to_name = shipment
+	attachment.is_private = 1
+	attachment.file_url = url
+	attachment.save()
+
+	return attachment.file_url
