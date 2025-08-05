@@ -232,12 +232,18 @@ class SendCloudUtils:
 			if shipments_results:
 				combined_result = {
 					"service_provider": "SendCloud",
-					"shipment_id": ", ".join(item["shipment_id"] for item in shipments_results),
+					"shipment_id": ", ".join(
+						item["shipment_id"] for item in shipments_results if item.get("shipment_id")
+					),
 					"carrier": shipments_results[0]["carrier"],
 					"carrier_service": shipments_results[0]["carrier_service"],
 					"shipment_amount": service_info["total_price"],
-					"awb_number": ", ".join(item["awb_number"] for item in shipments_results),
-					"tracking_url": ", ".join(item["tracking_url"] for item in shipments_results),
+					"awb_number": ", ".join(
+						item["awb_number"] for item in shipments_results if item.get("awb_number")
+					),
+					"tracking_url": ", ".join(
+						item["tracking_url"] for item in shipments_results if item.get("tracking_url")
+					),
 				}
 				return combined_result
 
