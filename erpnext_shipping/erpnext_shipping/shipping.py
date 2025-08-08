@@ -78,6 +78,7 @@ def fetch_shipping_rates(
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
 
+	shipment_prices = [item for item in shipment_prices if "total_price" in item]
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
 
