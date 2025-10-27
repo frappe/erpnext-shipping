@@ -272,7 +272,7 @@ class SendCloudUtils:
 					frappe.msgprint(
 						msg=_(
 							"Please make sure Shipment (ID: {0}), exists and is a complete Shipment on SendCloud."
-						).format(shipment_id),
+						).format(ship_id),
 						title=_("Label Not Found"),
 					)
 			except Exception:
