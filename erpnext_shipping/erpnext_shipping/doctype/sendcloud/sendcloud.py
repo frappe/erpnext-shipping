@@ -294,7 +294,7 @@ class SendCloudUtils:
 	def get_tracking_data(self, shipment_id):
 		# return SendCloud tracking data
 		shipment_id_list = shipment_id.split(", ")
-		awb_number, tracking_status, tracking_status_info, tracking_urls = [], [], [], []
+		awb_number, tracking_status, tracking_urls = [], [], []
 
 		for ship_id in shipment_id_list:
 			try:
@@ -322,13 +322,11 @@ class SendCloudUtils:
 			status_message = parcel_data.get("status", {}).get("message")
 			if status_message:
 				tracking_status.append(status_message)
-			if tracking_status_info:
-				tracking_status_info.append(status_message)
 
 		return {
 			"awb_number": ", ".join(awb_number),
 			"tracking_status": ", ".join(tracking_status),
-			"tracking_status_info": ", ".join(tracking_status_info),
+			"tracking_status_info": ", ".join(tracking_status),
 			"tracking_url": ", ".join(tracking_urls),
 		}
 
