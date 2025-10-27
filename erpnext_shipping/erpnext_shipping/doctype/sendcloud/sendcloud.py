@@ -256,17 +256,10 @@ class SendCloudUtils:
 		shipment_id_list = shipment_id.split(", ")
 		label_urls = []
 
-<<<<<<< HEAD
-		try:
-			for ship_id in shipment_id_list:
-				shipment_label_response = requests.get(
-					f"{LABELS_URL}/{ship_id}",
-=======
 		for ship_id in shipment_id_list:
 			try:
 				response = requests.get(
-					f"https://panel.sendcloud.sc/api/v2/labels/{ship_id}",
->>>>>>> 8ee12dd (refactor(sendcloud): fetch tracking data and label (#82))
+					f"{LABELS_URL}/{ship_id}",
 					auth=(self.api_key, self.api_secret),
 					headers={"Accept": "application/json"},
 				)
@@ -303,40 +296,13 @@ class SendCloudUtils:
 		shipment_id_list = shipment_id.split(", ")
 		awb_number, tracking_status, tracking_status_info, tracking_urls = [], [], [], []
 
-<<<<<<< HEAD
-			for ship_id in shipment_id_list:
-				tracking_data_response = requests.get(
-					f"{PARCELS_URL}/{ship_id}",
-=======
 		for ship_id in shipment_id_list:
 			try:
 				response = requests.get(
-					f"https://panel.sendcloud.sc/api/v2/parcels/{ship_id}",
->>>>>>> 8ee12dd (refactor(sendcloud): fetch tracking data and label (#82))
+					f"{PARCELS_URL}/{ship_id}",
 					auth=(self.api_key, self.api_secret),
 					headers={"Accept": "application/json"},
 				)
-<<<<<<< HEAD
-				tracking_data = json.loads(tracking_data_response.text)
-				tracking_data_parcel = tracking_data["parcel"]
-				tracking_data_parcel_status = tracking_data_parcel["status"]["message"]
-				tracking_url = tracking_data_parcel.get("tracking_url")
-				if tracking_url:
-					tracking_urls.append(tracking_url)
-				tracking_number = tracking_data_parcel.get("tracking_number")
-				if tracking_number:
-					awb_number.append(tracking_number)
-				tracking_status.append(tracking_data_parcel_status)
-				tracking_status_info.append(tracking_data_parcel_status)
-			return {
-				"awb_number": ", ".join(awb_number),
-				"tracking_status": ", ".join(tracking_status),
-				"tracking_status_info": ", ".join(tracking_status_info),
-				"tracking_url": ", ".join(tracking_urls),
-			}
-		except Exception:
-			show_error_alert("updating SendCloud Shipment")
-=======
 				response.raise_for_status()
 				tracking_data = response.json()
 			except Exception:
@@ -365,7 +331,6 @@ class SendCloudUtils:
 			"tracking_status_info": ", ".join(tracking_status_info),
 			"tracking_url": ", ".join(tracking_urls),
 		}
->>>>>>> 8ee12dd (refactor(sendcloud): fetch tracking data and label (#82))
 
 	def total_parcel_price(self, parcel_price, parcels: list[dict]):
 		count = 0
