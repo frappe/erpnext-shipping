@@ -129,23 +129,29 @@ class SendCloudUtils:
 		shipment_id_list = shipment_id.split(", ")
 		label_urls = []
 
-		try:
-			for ship_id in shipment_id_list:
-				shipment_label_response = requests.get(
+		for ship_id in shipment_id_list:
+			try:
+				response = requests.get(
 					f"https://panel.sendcloud.sc/api/v2/labels/{ship_id}",
 					auth=(self.api_key, self.api_secret),
+					headers={"Accept": "application/json"},
 				)
-				shipment_label = json.loads(shipment_label_response.text)
-				label_urls.append(shipment_label["label"]["label_printer"])
-			if len(label_urls):
-				return label_urls
-			else:
-				message = _(
-					"Please make sure Shipment (ID: {0}), exists and is a complete Shipment on SendCloud."
-				).format(shipment_id)
-				frappe.msgprint(msg=_(message), title=_("Label Not Found"))
-		except Exception:
-			show_error_alert("printing SendCloud Label")
+				response.raise_for_status()
+				data = response.json()
+				label_url = data.get("label", {}).get("label_printer")
+				if label_url:
+					label_urls.append(label_url)
+				else:
+					frappe.msgprint(
+						msg=_(
+							"Please make sure Shipment (ID: {0}), exists and is a complete Shipment on SendCloud."
+						).format(shipment_id),
+						title=_("Label Not Found"),
+					)
+			except Exception:
+				show_error_alert("printing SendCloud Label")
+
+		return label_urls
 
 	def download_label(self, label_url: str):
 		"""Download label from SendCloud."""
@@ -160,31 +166,44 @@ class SendCloudUtils:
 
 	def get_tracking_data(self, shipment_id):
 		# return SendCloud tracking data
-		try:
-			shipment_id_list = shipment_id.split(", ")
-			awb_number, tracking_status, tracking_status_info, tracking_urls = [], [], [], []
+		shipment_id_list = shipment_id.split(", ")
+		awb_number, tracking_status, tracking_status_info, tracking_urls = [], [], [], []
 
-			for ship_id in shipment_id_list:
-				tracking_data_response = requests.get(
+		for ship_id in shipment_id_list:
+			try:
+				response = requests.get(
 					f"https://panel.sendcloud.sc/api/v2/parcels/{ship_id}",
 					auth=(self.api_key, self.api_secret),
+					headers={"Accept": "application/json"},
 				)
-				tracking_data = json.loads(tracking_data_response.text)
-				tracking_data_parcel = tracking_data["parcel"]
-				tracking_data_parcel_status = tracking_data_parcel["status"]["message"]
+				response.raise_for_status()
+				tracking_data = response.json()
+			except Exception:
+				show_error_alert("updating SendCloud Shipment")
+				continue
 
-				tracking_urls.append(tracking_data_parcel["tracking_url"])
-				awb_number.append(tracking_data_parcel["tracking_number"])
-				tracking_status.append(tracking_data_parcel_status)
-				tracking_status_info.append(tracking_data_parcel_status)
-			return {
-				"awb_number": ", ".join(awb_number),
-				"tracking_status": ", ".join(tracking_status),
-				"tracking_status_info": ", ".join(tracking_status_info),
-				"tracking_url": ", ".join(tracking_urls),
-			}
-		except Exception:
-			show_error_alert("updating SendCloud Shipment")
+			parcel_data = tracking_data.get("parcel", {})
+
+			tracking_url = parcel_data.get("tracking_url")
+			if tracking_url:
+				tracking_urls.append(tracking_url)
+
+			tracking_number = parcel_data.get("tracking_number")
+			if tracking_number:
+				awb_number.append(tracking_number)
+
+			status_message = parcel_data.get("status", {}).get("message")
+			if status_message:
+				tracking_status.append(status_message)
+			if tracking_status_info:
+				tracking_status_info.append(status_message)
+
+		return {
+			"awb_number": ", ".join(awb_number),
+			"tracking_status": ", ".join(tracking_status),
+			"tracking_status_info": ", ".join(tracking_status_info),
+			"tracking_url": ", ".join(tracking_urls),
+		}
 
 	def total_parcel_price(self, parcel_price, parcels: list[dict]):
 		count = 0
