@@ -28,14 +28,17 @@ repos:
         args: ['--py310-plus']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.7
+    rev: v0.15.17
     hooks:
       - id: ruff
         name: "Sort Python imports"
         args: ["--select", "I", "--fix"]
 
+      - id: ruff
+        name: "Run ruff linter"
+
       - id: ruff-format
-        name: "Format Python code"
+        name: "Run ruff formatter"
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
