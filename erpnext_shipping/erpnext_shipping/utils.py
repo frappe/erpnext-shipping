@@ -48,20 +48,6 @@ def validate_address(address):
 		frappe.throw(_("Please add a valid pincode in Address {0}.").format(address.address_title))
 
 
-def validate_parcels(doc, method=None):
-	if doc.docstatus != 0:
-		return
-
-	for parcel in doc.shipment_parcel:
-		for field in ("length", "width", "height"):
-			if (parcel.get(field) or 0) < 1:
-				frappe.throw(
-					_("Parcel row {idx}: {field_label} must be at least 1 cm.").format(
-						idx=parcel.idx, field_label=_(parcel.meta.get_label(field))
-					)
-				)
-
-
 def validate_phone(doc, method=None):
 	if doc.pickup_from_type == "Company":
 		phone_number = frappe.db.get_value("User", doc.pickup_contact_person, "phone")
