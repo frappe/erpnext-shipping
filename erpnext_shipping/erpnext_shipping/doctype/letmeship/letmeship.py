@@ -9,7 +9,7 @@ import frappe
 import requests
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils.data import get_link_to_form
+from frappe.utils.data import cint, flt, get_link_to_form
 from requests.exceptions import HTTPError
 
 from erpnext_shipping.erpnext_shipping.utils import show_error_alert
@@ -317,15 +317,15 @@ class LetMeShipUtils:
 	def get_parcel_list(self, parcels, description_of_content):
 		parcel_list = []
 		for parcel in parcels:
-			if (parcel.get("count") or 0) < 1:
+			if cint(parcel.get("count")) < 1:
 				continue
 
 			formatted_parcel = {}
-			formatted_parcel["height"] = parcel.get("height") or 0
-			formatted_parcel["width"] = parcel.get("width") or 0
-			formatted_parcel["length"] = parcel.get("length") or 0
-			formatted_parcel["weight"] = parcel.get("weight") or 0
-			formatted_parcel["quantity"] = parcel.get("count")
+			formatted_parcel["height"] = cint(parcel.get("height"))
+			formatted_parcel["width"] = cint(parcel.get("width"))
+			formatted_parcel["length"] = cint(parcel.get("length"))
+			formatted_parcel["weight"] = flt(parcel.get("weight"))
+			formatted_parcel["quantity"] = cint(parcel.get("count"))
 			formatted_parcel["contentDescription"] = description_of_content
 			parcel_list.append(formatted_parcel)
 
