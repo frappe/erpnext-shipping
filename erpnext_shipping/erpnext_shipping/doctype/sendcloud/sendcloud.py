@@ -461,7 +461,7 @@ class SendCloudUtils:
 	def format_api_errors(self, errors):
 		return "\n".join(
 			f"Field: {(err.get('source') or {}).get('pointer', 'N/A')}, "
-			f"Code: {err.get('code', 'N/A')}, "
-			f"Detail: {err.get('detail', 'N/A')}"
+			+ f"Code: {err.get('code', 'N/A')}, "
+			+ f"Detail: {err.get('detail', 'N/A')}"
 			for err in errors
 		)
