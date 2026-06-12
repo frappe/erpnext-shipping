@@ -317,14 +317,18 @@ class LetMeShipUtils:
 	def get_parcel_list(self, parcels, description_of_content):
 		parcel_list = []
 		for parcel in parcels:
+			if (parcel.get("count") or 0) < 1:
+				continue
+
 			formatted_parcel = {}
-			formatted_parcel["height"] = parcel.get("height")
-			formatted_parcel["width"] = parcel.get("width")
-			formatted_parcel["length"] = parcel.get("length")
-			formatted_parcel["weight"] = parcel.get("weight")
+			formatted_parcel["height"] = parcel.get("height") or 0
+			formatted_parcel["width"] = parcel.get("width") or 0
+			formatted_parcel["length"] = parcel.get("length") or 0
+			formatted_parcel["weight"] = parcel.get("weight") or 0
 			formatted_parcel["quantity"] = parcel.get("count")
 			formatted_parcel["contentDescription"] = description_of_content
 			parcel_list.append(formatted_parcel)
+
 		return parcel_list
 
 	def get_pickup_delivery_info(self, address, contact):
