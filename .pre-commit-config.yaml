@@ -22,20 +22,23 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.34.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: ['--py310-plus']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.0
+    rev: v0.15.17
     hooks:
       - id: ruff
         name: "Sort Python imports"
         args: ["--select", "I", "--fix"]
 
+      - id: ruff
+        name: "Run ruff linter"
+
       - id: ruff-format
-        name: "Format Python code"
+        name: "Run ruff formatter"
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
@@ -47,14 +50,3 @@ repos:
             (?x)^(
                 erpnext_shipping/public/dist/.*
             )$
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
-    hooks:
-      - id: flake8
-        additional_dependencies: ['flake8-bugbear',]
-
-ci:
-    autoupdate_schedule: weekly
-    skip: []
-    submodules: false
