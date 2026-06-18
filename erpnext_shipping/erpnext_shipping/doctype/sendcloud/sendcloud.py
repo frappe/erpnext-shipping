@@ -128,17 +128,11 @@ class SendCloudUtils:
 			return []
 
 		parcels = []
-		for i, parcel in enumerate(json.loads(shipment_parcel), start=1):
-			parcel_count = parcel.get("count", 1)
-			for j in range(parcel_count):
-				parcel_data = self.get_parcel(
-					parcel,
-					shipment,
-					i,
-					j + 1,
-					parcel_count,
-				)
-				parcels.append(parcel_data)
+		index = 0
+		for parcel in json.loads(shipment_parcel):
+			for idx in range(parcel.get("count", 1)):
+				index += 1
+				parcels.append(self.get_parcel(parcel, shipment, index))
 
 		house_number, address = self.extract_house_number(pickup_address.address_line1)
 
@@ -175,149 +169,98 @@ class SendCloudUtils:
 			},
 		}
 
-		if service_info.get("multicollo"):
-			multicollo_result = self.create_multicollo_shipment(
-				shipment,
-				payload,
-				service_info,
-			)
-
-			if isinstance(multicollo_result, dict):
-				return multicollo_result
-
-			if multicollo_result == "error":
-				return None
-
-			return self.create_single_parcel_shipments(
-				payload,
-				parcels,
-				service_info,
-			)
-
-		return self.create_single_parcel_shipments(
-			payload,
-			parcels,
-			service_info,
-		)
-
-	def create_multicollo_shipment(self, shipment, payload, service_info):
-		try:
-			response = requests.post(
-				SHIPMENTS_URL,
-				json=payload,
-				auth=(self.api_key, self.api_secret),
-			)
-
-			response_data = response.json()
-
-			if errors := response_data.get("errors"):
-				if self.should_fallback_to_single_shipments(errors):
-					return None
-
-				frappe.msgprint(
-					_("Error occurred while creating shipment {0}:").format(shipment)
-					+ f"\n{self.format_api_errors(errors)}",
-					indicator="red",
-					alert=True,
-				)
-				return "error"
-
-			parcels_data = response_data.get("data", {}).get("parcels", [])
-			if parcels_data:
-				shipment_ids = [str(parcel["id"]) for parcel in parcels_data]
-				tracking_numbers = [parcel.get("tracking_number") or "" for parcel in parcels_data]
-				tracking_urls = [parcel.get("tracking_url") or "" for parcel in parcels_data]
-
-				return {
-					"service_provider": "SendCloud",
-					"shipment_id": ", ".join(shipment_ids),
-					"shipment_ids": shipment_ids,
-					"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
-					"carrier_service": service_info["service_name"],
-					"shipment_amount": service_info["total_price"],
-					"awb_number": ", ".join(tracking_numbers),
-					"tracking_number": ", ".join(tracking_numbers),
-					"tracking_url": ", ".join(tracking_urls),
-				}
-
-		except Exception:
-			show_error_alert("creating SendCloud Shipment (multicollo)")
-			return "error"
-
-		return None
-
-	def create_single_parcel_shipments(self, payload, parcels, service_info):
-		shipments_results = []
-
-		for parcel in parcels:
-			payload_single = payload.copy()
-			payload_single["parcels"] = [parcel]
-
+		if self.should_use_multicollo(service_info, parcels):
+			# Multicollo Logic: All packages are processed in a single API call
 			try:
 				response = requests.post(
-					SHIPMENTS_ANNOUNCE_URL,
-					json=payload_single,
+					SHIPMENTS_URL,
+					json=payload,
 					auth=(self.api_key, self.api_secret),
 				)
-
 				response_data = response.json()
-
 				if errors := response_data.get("errors"):
 					frappe.msgprint(
-						_("Error occurred while creating shipment for parcel {0}:").format(
-							parcel.get("order_number")
-						)
+						_("Error occurred while creating shipment {0}:").format(shipment)
 						+ f"\n{self.format_api_errors(errors)}",
 						indicator="red",
 						alert=True,
 					)
-					continue
+					return None
 
 				parcels_data = response_data.get("data", {}).get("parcels", [])
 				if parcels_data:
-					parcel_data = parcels_data[0]
-					shipments_results.append(
-						{
-							"shipment_id": str(parcel_data["id"]),
-							"awb_number": parcel_data.get("tracking_number", ""),
-							"tracking_url": parcel_data.get("tracking_url", ""),
-							"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
-							"carrier_service": service_info["service_name"],
-							"shipment_amount": service_info["total_price"],
-						}
-					)
-
+					shipment_ids = [str(parcel["id"]) for parcel in parcels_data]
+					tracking_numbers = [parcel.get("tracking_number") or "" for parcel in parcels_data]
+					tracking_urls = [parcel.get("tracking_url") or "" for parcel in parcels_data]
+					return {
+						"service_provider": "SendCloud",
+						"shipment_id": ", ".join(shipment_ids),
+						"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
+						"carrier_service": service_info["service_name"],
+						"shipment_amount": service_info["total_price"],
+						"awb_number": ", ".join(tracking_numbers),
+						"tracking_url": ", ".join(tracking_urls),
+					}
 			except Exception:
-				show_error_alert(f"creating SendCloud Shipment for parcel {parcel.get('order_number')}")
+				show_error_alert("creating SendCloud Shipment (multicollo)")
+		else:
+			# Non-Multicollo Logic: A separate API call is made for each package
+			shipments_results = []
+			for parcel in parcels:
+				payload_single = payload.copy()
+				payload_single["parcels"] = [parcel]
+				try:
+					response = requests.post(
+						SHIPMENTS_ANNOUNCE_URL,
+						json=payload_single,
+						auth=(self.api_key, self.api_secret),
+					)
+					response_data = response.json()
+					if errors := response_data.get("errors"):
+						frappe.msgprint(
+							_("Error occurred while creating shipment for parcel {0}:").format(
+								parcel.get("order_number")
+							)
+							+ f"\n{self.format_api_errors(errors)}",
+							indicator="red",
+							alert=True,
+						)
+						continue
 
-		if shipments_results:
-			shipment_ids = [item["shipment_id"] for item in shipments_results if item.get("shipment_id")]
-			awb_numbers = [item["awb_number"] for item in shipments_results if item.get("awb_number")]
-			tracking_urls = [item["tracking_url"] for item in shipments_results if item.get("tracking_url")]
-
-			return {
-				"service_provider": "SendCloud",
-				"shipment_id": ", ".join(shipment_ids),
-				"shipment_ids": shipment_ids,
-				"carrier": shipments_results[0]["carrier"],
-				"carrier_service": shipments_results[0]["carrier_service"],
-				"shipment_amount": service_info["total_price"],
-				"awb_number": ", ".join(awb_numbers),
-				"tracking_number": ", ".join(awb_numbers),
-				"tracking_url": ", ".join(tracking_urls),
-			}
+					parcels_data = response_data.get("data", {}).get("parcels", [])
+					if parcels_data:
+						parcel_data = parcels_data[0]
+						shipments_results.append(
+							{
+								"shipment_id": str(parcel_data["id"]),
+								"awb_number": parcel_data.get("tracking_number", ""),
+								"tracking_url": parcel_data.get("tracking_url", ""),
+								"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
+								"carrier_service": service_info["service_name"],
+								"shipment_amount": service_info["total_price"],
+							}
+						)
+				except Exception:
+					show_error_alert(f"creating SendCloud Shipment for parcel {parcel.get('order_number')}")
+			if shipments_results:
+				combined_result = {
+					"service_provider": "SendCloud",
+					"shipment_id": ", ".join(
+						item["shipment_id"] for item in shipments_results if item.get("shipment_id")
+					),
+					"carrier": shipments_results[0]["carrier"],
+					"carrier_service": shipments_results[0]["carrier_service"],
+					"shipment_amount": service_info["total_price"],
+					"awb_number": ", ".join(
+						item["awb_number"] for item in shipments_results if item.get("awb_number")
+					),
+					"tracking_url": ", ".join(
+						item["tracking_url"] for item in shipments_results if item.get("tracking_url")
+					),
+				}
+				return combined_result
 
 		return None
-
-	def should_fallback_to_single_shipments(self, errors):
-		for err in errors or []:
-			code = (err.get("code") or "").lower()
-			pointer = ((err.get("source") or {}).get("pointer") or "").lower()
-
-			if code == "validation_error" and pointer.startswith("/parcels"):
-				return True
-
-		return False
 
 	def get_label(self, shipment_id):
 		# Retrieve shipment label from SendCloud
@@ -431,12 +374,7 @@ class SendCloudUtils:
 		else:
 			return carrier_name.upper() if post_or_get == "get" else carrier_name.lower()
 
-	def get_parcel(self, parcel, shipment, index, count_index=1, parcel_count=1):
-		order_number = f"{shipment}-{index}"
-
-		if parcel_count > 1:
-			order_number = f"{shipment}-{index}-{count_index}"
-
+	def get_parcel(self, parcel, shipment, index):
 		return {
 			"dimensions": {
 				"length": parcel.get("length", 0),
@@ -445,7 +383,7 @@ class SendCloudUtils:
 				"unit": "cm",
 			},
 			"weight": {"value": flt(parcel.get("weight", 0), WEIGHT_DECIMALS), "unit": "kg"},
-			"order_number": order_number,
+			"order_number": f"{shipment}-{index}",
 		}
 
 	def extract_house_number(self, address):
@@ -465,3 +403,8 @@ class SendCloudUtils:
 			+ f"Detail: {err.get('detail', 'N/A')}"
 			for err in errors
 		)
+
+	def should_use_multicollo(self, service_info, parcels):
+		carrier = (service_info.get("carrier") or "").lower()
+
+		return len(parcels) > 1 and carrier == "dpd" and service_info.get("multicollo")
