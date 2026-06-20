@@ -94,13 +94,7 @@ class SendCloudUtils:
 			response_data = response.json()
 
 			if errors := response_data.get("errors"):
-				frappe.msgprint(
-					self.format_api_errors(errors),
-					title=_("SendCloud"),
-					indicator="red",
-					alert=True,
-				)
-				return []
+				frappe.throw(self.format_api_errors(errors), title=_("SendCloud"))
 
 			if "data" not in response_data or not response_data["data"]:
 				frappe.throw(_("No shipping options found for this destination."), title=_("Sendcloud"))
@@ -375,16 +369,24 @@ class SendCloudUtils:
 			return carrier_name.upper() if post_or_get == "get" else carrier_name.lower()
 
 	def get_parcel(self, parcel, shipment, index):
-		return {
-			"dimensions": {
-				"length": parcel.get("length", 0),
-				"width": parcel.get("width", 0),
-				"height": parcel.get("height", 0),
-				"unit": "cm",
-			},
+		data = {
 			"weight": {"value": flt(parcel.get("weight", 0), WEIGHT_DECIMALS), "unit": "kg"},
 			"order_number": f"{shipment}-{index}",
 		}
+
+		length = parcel.get("length", 0)
+		width = parcel.get("width", 0)
+		height = parcel.get("height", 0)
+
+		if length > 0 and width > 0 and height > 0:
+			data["dimensions"] = {
+				"length": length,
+				"width": width,
+				"height": height,
+				"unit": "cm",
+			}
+
+		return data
 
 	def extract_house_number(self, address):
 		pattern = r"\b\d+[/-]?\w*(?:-\d+\w*)?\b"
