@@ -88,6 +88,9 @@ class LetMeShipUtils:
 		pickup_contact=None,
 		delivery_contact=None,
 	):
+		if not self.validate_parcels(parcels):
+			return []
+
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
 		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
 		delivery_address.address_title = self.first_30_chars(delivery_address.address_title)
@@ -350,6 +353,18 @@ class LetMeShipUtils:
 			"phone": {"phoneNumber": contact.phone, "phoneNumberPrefix": contact.phone_prefix},
 			"email": contact.email_id,
 		}
+
+	def validate_parcels(self, parcels):
+		for parcel in parcels:
+			for field in ("length", "width", "height"):
+				if (parcel.get(field) or 0) < 1:
+					frappe.msgprint(
+						_("LetMeShip rates need parcel dimensions (length, width, height)."),
+						indicator="orange",
+						alert=True,
+					)
+					return False
+		return True
 
 
 def get_letmeship_utils() -> "LetMeShipUtils":
