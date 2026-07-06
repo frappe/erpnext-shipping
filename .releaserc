@@ -20,7 +20,7 @@
 		"@semantic-release/release-notes-generator",
 		[
 			"@semantic-release/exec", {
-				"prepareCmd": "sed -ir -E \"s/\\\"[0-9]+\\.[0-9]+\\.[0-9]+\\\"/\\\"${nextRelease.version}\\\"/\" erpnext_shipping/__init__.py"
+				"prepareCmd": "sed -i -E \"s/\\\"[0-9]+\\.[0-9]+\\.[0-9]+\\\"/\\\"${nextRelease.version}\\\"/\" erpnext_shipping/__init__.py"
 			}
 		],
 		[
