@@ -89,6 +89,11 @@ class LetMeShipUtils:
 		delivery_contact=None,
 	):
 		if not self.validate_parcels(parcels):
+			frappe.msgprint(
+				_("LetMeShip rates need parcel dimensions (length, width, height)."),
+				indicator="orange",
+				alert=True,
+			)
 			return []
 
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
@@ -135,7 +140,7 @@ class LetMeShipUtils:
 	):
 		parcels = json.loads(shipment_parcel)
 		if not self.validate_parcels(parcels):
-			return None
+			frappe.throw(_("LetMeShip booking needs parcel dimensions (length, width, height)."))
 
 		self.set_letmeship_specific_fields(pickup_contact, delivery_contact)
 		pickup_address.address_title = self.first_30_chars(pickup_address.address_title)
@@ -362,11 +367,6 @@ class LetMeShipUtils:
 		for parcel in parcels:
 			for field in ("length", "width", "height"):
 				if (parcel.get(field) or 0) < 1:
-					frappe.msgprint(
-						_("LetMeShip rates need parcel dimensions (length, width, height)."),
-						indicator="orange",
-						alert=True,
-					)
 					return False
 		return True
 
