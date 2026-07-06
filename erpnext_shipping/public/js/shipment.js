@@ -8,11 +8,11 @@ frappe.ui.form.on("Shipment", {
 				if (frm.doc.shipment_parcel.length > 1) {
 					frappe.confirm(
 						__(
-							"If your shipment contains packages with varying weights, the estimated shipping rates may differ from the final price charged by your carrier. Do you wish to proceed?"
+							"If your shipment contains packages with varying weights, the estimated shipping rates may differ from the final price charged by your carrier. Do you wish to proceed?",
 						),
 						function () {
 							frm.events.fetch_shipping_rates(frm);
-						}
+						},
 					);
 				} else {
 					frm.events.fetch_shipping_rates(frm);
@@ -25,19 +25,15 @@ frappe.ui.form.on("Shipment", {
 				function () {
 					return frm.events.print_shipping_label(frm);
 				},
-				__("Tools")
+				__("Tools"),
 			);
 			if (frm.doc.tracking_status != "Delivered") {
 				frm.add_custom_button(
 					__("Update Tracking"),
 					function () {
-						return frm.events.update_tracking(
-							frm,
-							frm.doc.service_provider,
-							frm.doc.shipment_id
-						);
+						return frm.events.update_tracking(frm, frm.doc.service_provider, frm.doc.shipment_id);
 					},
-					__("Tools")
+					__("Tools"),
 				);
 
 				frm.add_custom_button(
@@ -47,14 +43,14 @@ frappe.ui.form.on("Shipment", {
 							const urls = frm.doc.tracking_url.split(", ");
 							urls.forEach((url) => window.open(url));
 						} else {
-							let msg = __(
-								"Please complete Shipment (ID: {0}) on {1} and Update Tracking.",
-								[frm.doc.shipment_id, frm.doc.service_provider]
-							);
+							let msg = __("Please complete Shipment (ID: {0}) on {1} and Update Tracking.", [
+								frm.doc.shipment_id,
+								frm.doc.service_provider,
+							]);
 							frappe.msgprint({ message: msg, title: __("Incomplete Shipment") });
 						}
 					},
-					__("View")
+					__("View"),
 				);
 			}
 		}
@@ -158,7 +154,7 @@ function select_from_available_services(frm, available_services) {
 			}
 			return prev;
 		},
-		{ preferred_services: [], other_services: [] }
+		{ preferred_services: [], other_services: [] },
 	);
 
 	const dialog = new frappe.ui.Dialog({
@@ -179,7 +175,7 @@ function select_from_available_services(frm, available_services) {
 		frappe.render_template("shipment_service_selector", {
 			header_columns: [__("Platform"), __("Carrier"), __("Parcel Service"), __("Price"), ""],
 			data: arranged_services,
-		})
+		}),
 	);
 
 	dialog.$body.on("click", ".btn", function () {
@@ -223,11 +219,7 @@ function select_from_available_services(frm, available_services) {
 						title: __("Shipment Created"),
 						indicator: "green",
 					});
-					frm.events.update_tracking(
-						frm,
-						r.message.service_provider,
-						r.message.shipment_id
-					);
+					frm.events.update_tracking(frm, r.message.service_provider, r.message.shipment_id);
 				}
 			},
 		});

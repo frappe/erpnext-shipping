@@ -1,0 +1,84 @@
+{
+ "app": "erpnext_shipping",
+ "creation": "2026-07-06 22:06:19.266267",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "header_icon": "package-2",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Shipment",
+   "link_to": "Shipment",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "SendCloud",
+   "link_to": "SendCloud",
+   "link_type": "DocType",
+   "navigate_to_tab": "",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "LetMeShip",
+   "link_to": "LetMeShip",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Parcel Service",
+   "link_to": "Parcel Service",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Parcel Service Type",
+   "link_to": "Parcel Service Type",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-06 22:12:29.764809",
+ "modified_by": "Administrator",
+ "module": "ERPNext Shipping",
+ "name": "Shipping",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Shipping"
+}

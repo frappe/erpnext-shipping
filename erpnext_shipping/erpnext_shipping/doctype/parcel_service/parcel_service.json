@@ -30,7 +30,7 @@
   }
  ],
  "links": [],
- "modified": "2020-11-09 19:48:21.690285",
+ "modified": "2026-07-07 01:19:23.247369",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Parcel Service",
@@ -50,7 +50,9 @@
   }
  ],
  "quick_entry": 1,
- "sort_field": "modified",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

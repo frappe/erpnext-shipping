@@ -38,7 +38,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-04-22 17:42:04.777538",
+ "modified": "2026-07-07 01:19:23.385682",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "LetMeShip",
@@ -56,7 +56,8 @@
   }
  ],
  "quick_entry": 1,
- "sort_field": "modified",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1

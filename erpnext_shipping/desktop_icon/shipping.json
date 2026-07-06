@@ -1,0 +1,21 @@
+{
+ "app": "erpnext_shipping",
+ "bg_color": "gray",
+ "creation": "2026-07-06 22:07:36.889619",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Shipping",
+ "link_to": "Shipping",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-07-06 22:07:36.889619",
+ "modified_by": "Administrator",
+ "name": "Shipping",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "sidebar": "Shipping",
+ "standard": 1
+}
