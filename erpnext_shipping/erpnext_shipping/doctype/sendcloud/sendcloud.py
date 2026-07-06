@@ -407,6 +407,8 @@ class SendCloudUtils:
 		)
 
 	def should_use_multicollo(self, service_info, parcels):
+		# Only DPD reliably supports multicollo via /v3/shipments; other carriers
+		# (e.g. UPS) may report multicollo=true but fail at creation time.
 		carrier = (service_info.get("carrier") or "").lower()
 
 		return len(parcels) > 1 and carrier == "dpd" and service_info.get("multicollo")
