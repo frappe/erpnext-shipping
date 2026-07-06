@@ -51,6 +51,9 @@ class SendCloudUtils:
 		max_width = max(parcel.get("width", 0) for parcel in parcels)
 		max_height = max(parcel.get("height", 0) for parcel in parcels)
 
+		for parcel in parcels:
+			self.warn_partial_dimensions(parcel)
+
 		to_country = delivery_address.country_code.upper()
 		from_country = pickup_address.country_code.upper()
 
@@ -124,6 +127,7 @@ class SendCloudUtils:
 		parcels = []
 		index = 0
 		for parcel in json.loads(shipment_parcel):
+			self.warn_partial_dimensions(parcel)
 			for idx in range(parcel.get("count", 1)):
 				index += 1
 				parcels.append(self.get_parcel(parcel, shipment, index))
@@ -397,6 +401,17 @@ class SendCloudUtils:
 			return house_number, cleaned_address
 		else:
 			return None, None
+
+	def warn_partial_dimensions(self, parcel):
+		dimensions = [parcel.get("length", 0), parcel.get("width", 0), parcel.get("height", 0)]
+		if any(dim > 0 for dim in dimensions) and not all(dim > 0 for dim in dimensions):
+			frappe.msgprint(
+				_(
+					"SendCloud ignores incomplete parcel dimensions; provide length, width, and height or leave all empty."
+				),
+				indicator="orange",
+				alert=True,
+			)
 
 	def format_api_errors(self, errors):
 		return "\n".join(
