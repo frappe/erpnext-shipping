@@ -237,15 +237,19 @@ class SendCloudUtils:
 			cancel_failed = []
 			for result in shipments_results:
 				shipment_id = result["shipment_id"]
-				success, error = self.cancel_shipment(shipment_id)
+				success, detail = self.cancel_shipment(shipment_id)
 				if success:
-					cancelled_ids.append(shipment_id)
+					cancelled_ids.append((shipment_id, detail))
 				else:
-					cancel_failed.append((shipment_id, error))
+					cancel_failed.append((shipment_id, detail))
 
 			if cancelled_ids:
+				cancelled_msg = ", ".join(
+					f"{shipment_id} ({detail})" if detail == "queued" else shipment_id
+					for shipment_id, detail in cancelled_ids
+				)
 				frappe.msgprint(
-					_("Cancelled SendCloud shipment IDs: {0}").format(", ".join(cancelled_ids)),
+					_("Cancelled SendCloud shipment IDs: {0}").format(cancelled_msg),
 					indicator="orange",
 					alert=True,
 				)
@@ -268,12 +272,36 @@ class SendCloudUtils:
 				f"{SHIPMENTS_URL}/{shipment_id}/cancel",
 				auth=(self.api_key, self.api_secret),
 			)
-			response_data = response.json()
-			if errors := response_data.get("errors"):
-				return False, self.format_api_errors(errors)
-			return True, None
 		except Exception:
 			return False, _("Request failed")
+
+		if response.status_code not in (200, 202):
+			try:
+				response_data = response.json()
+			except ValueError:
+				response_data = None
+			if response_data and (errors := response_data.get("errors")):
+				return False, self.format_api_errors(errors)
+			body = (response.text or "")[:200]
+			return False, _("Unexpected response (HTTP {0}): {1}").format(response.status_code, body)
+
+		try:
+			response_data = response.json()
+		except ValueError:
+			body = (response.text or "")[:200]
+			return False, _("Invalid JSON response (HTTP {0}): {1}").format(response.status_code, body)
+
+		if errors := response_data.get("errors"):
+			return False, self.format_api_errors(errors)
+
+		status = response_data.get("data", {}).get("status")
+		if status == "cancelled":
+			return True, "cancelled"
+		if status == "queued":
+			return True, "queued"
+
+		body = json.dumps(response_data)[:200]
+		return False, _("Unexpected cancel response: {0}").format(body)
 
 	def get_label(self, shipment_id):
 		# Retrieve shipment label from SendCloud
