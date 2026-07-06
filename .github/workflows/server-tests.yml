@@ -28,6 +28,9 @@ concurrency:
   group: version-16-erpnext_shipping-${{ github.event.number }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: Unit Tests

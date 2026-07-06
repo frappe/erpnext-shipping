@@ -3,6 +3,9 @@ name: Linters
 on:
   pull_request: {}
 
+permissions:
+  contents: read
+
 jobs:
   linters:
     name: linters
