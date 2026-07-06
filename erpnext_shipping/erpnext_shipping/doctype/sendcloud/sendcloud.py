@@ -188,8 +188,12 @@ class SendCloudUtils:
 				parcels_data = response_data.get("data", {}).get("parcels", [])
 				if parcels_data:
 					shipment_ids = [str(parcel["id"]) for parcel in parcels_data]
-					tracking_numbers = [parcel.get("tracking_number") or "" for parcel in parcels_data]
-					tracking_urls = [parcel.get("tracking_url") or "" for parcel in parcels_data]
+					tracking_numbers = [
+						parcel["tracking_number"] for parcel in parcels_data if parcel.get("tracking_number")
+					]
+					tracking_urls = [
+						parcel["tracking_url"] for parcel in parcels_data if parcel.get("tracking_url")
+					]
 					return {
 						"service_provider": "SendCloud",
 						"shipment_id": ", ".join(shipment_ids),
