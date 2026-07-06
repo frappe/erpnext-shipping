@@ -20,7 +20,8 @@ CURRENCY_DECIMALS = 2
 
 BASE_URL = "https://panel.sendcloud.sc/api"
 SHIPPING_OPTIONS_URL = f"{BASE_URL}/v3/shipping-options"
-SHIPMENTS_ANNOUNCE_URL = f"{BASE_URL}/v3/shipments/announce"
+SHIPMENTS_URL = f"{BASE_URL}/v3/shipments"
+SHIPMENTS_ANNOUNCE_URL = f"{SHIPMENTS_URL}/announce"
 LABELS_URL = f"{BASE_URL}/v2/labels"
 PARCELS_URL = f"{BASE_URL}/v2/parcels"
 
@@ -169,9 +170,12 @@ class SendCloudUtils:
 		}
 
 		shipments_results = []
+		failed_parcels = []
+
 		for parcel in parcels:
 			payload_single = payload.copy()
 			payload_single["parcels"] = [parcel]
+			order_number = parcel.get("order_number")
 			try:
 				response = requests.post(
 					SHIPMENTS_ANNOUNCE_URL,
@@ -180,32 +184,30 @@ class SendCloudUtils:
 				)
 				response_data = response.json()
 				if errors := response_data.get("errors"):
-					frappe.msgprint(
-						_("Error occurred while creating shipment for parcel {0}:").format(
-							parcel.get("order_number")
-						)
-						+ f"\n{self.format_api_errors(errors)}",
-						indicator="red",
-						alert=True,
-					)
+					failed_parcels.append((order_number, self.format_api_errors(errors)))
 					continue
 
 				parcels_data = response_data.get("data", {}).get("parcels", [])
-				if parcels_data:
-					parcel_data = parcels_data[0]
-					shipments_results.append(
-						{
-							"shipment_id": str(parcel_data["id"]),
-							"awb_number": parcel_data.get("tracking_number", ""),
-							"tracking_url": parcel_data.get("tracking_url", ""),
-							"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
-							"carrier_service": service_info["service_name"],
-							"shipment_amount": service_info["total_price"],
-						}
-					)
+				if not parcels_data:
+					failed_parcels.append((order_number, _("No parcel data returned from SendCloud.")))
+					continue
+
+				parcel_data = parcels_data[0]
+				shipments_results.append(
+					{
+						"shipment_id": str(parcel_data["id"]),
+						"awb_number": parcel_data.get("tracking_number", ""),
+						"tracking_url": parcel_data.get("tracking_url", ""),
+						"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
+						"carrier_service": service_info["service_name"],
+						"shipment_amount": service_info["total_price"],
+					}
+				)
 			except Exception:
-				show_error_alert(f"creating SendCloud Shipment for parcel {parcel.get('order_number')}")
-		if shipments_results:
+				show_error_alert(f"creating SendCloud Shipment for parcel {order_number}")
+				failed_parcels.append((order_number, _("Unexpected error. See Error Log.")))
+
+		if len(shipments_results) == len(parcels):
 			return {
 				"service_provider": "SendCloud",
 				"shipment_id": ", ".join(
@@ -222,7 +224,56 @@ class SendCloudUtils:
 				),
 			}
 
+		for order_number, reason in failed_parcels:
+			frappe.msgprint(
+				_("Error occurred while creating shipment for parcel {0}:").format(order_number)
+				+ f"\n{reason}",
+				indicator="red",
+				alert=True,
+			)
+
+		if shipments_results:
+			cancelled_ids = []
+			cancel_failed = []
+			for result in shipments_results:
+				shipment_id = result["shipment_id"]
+				success, error = self.cancel_shipment(shipment_id)
+				if success:
+					cancelled_ids.append(shipment_id)
+				else:
+					cancel_failed.append((shipment_id, error))
+
+			if cancelled_ids:
+				frappe.msgprint(
+					_("Cancelled SendCloud shipment IDs: {0}").format(", ".join(cancelled_ids)),
+					indicator="orange",
+					alert=True,
+				)
+			if cancel_failed:
+				failed_details = "\n".join(
+					f"ID {shipment_id}: {error}" for shipment_id, error in cancel_failed
+				)
+				frappe.msgprint(
+					_("Failed to cancel SendCloud shipment IDs (manual cleanup needed):")
+					+ f"\n{failed_details}",
+					indicator="red",
+					alert=True,
+				)
+
 		return None
+
+	def cancel_shipment(self, shipment_id):
+		try:
+			response = requests.post(
+				f"{SHIPMENTS_URL}/{shipment_id}/cancel",
+				auth=(self.api_key, self.api_secret),
+			)
+			response_data = response.json()
+			if errors := response_data.get("errors"):
+				return False, self.format_api_errors(errors)
+			return True, None
+		except Exception:
+			return False, _("Request failed")
 
 	def get_label(self, shipment_id):
 		# Retrieve shipment label from SendCloud
