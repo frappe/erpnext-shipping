@@ -130,7 +130,7 @@ class SendCloudUtils:
 		index = 0
 		for parcel in json.loads(shipment_parcel):
 			self.warn_partial_dimensions(parcel)
-			for idx in range(parcel.get("count", 1)):
+			for _parcel in range(parcel.get("count", 1)):
 				index += 1
 				parcels.append(self.get_parcel(parcel, shipment, index))
 
