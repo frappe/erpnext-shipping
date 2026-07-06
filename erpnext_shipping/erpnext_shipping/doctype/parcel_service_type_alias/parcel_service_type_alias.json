@@ -28,14 +28,16 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-11-09 19:48:05.381127",
+ "modified": "2026-07-07 01:19:22.967117",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Parcel Service Type Alias",
  "owner": "Administrator",
  "permissions": [],
  "quick_entry": 1,
- "sort_field": "modified",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

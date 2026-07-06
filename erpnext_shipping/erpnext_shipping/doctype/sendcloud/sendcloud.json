@@ -32,7 +32,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-04-22 17:43:51.711897",
+ "modified": "2026-07-07 01:19:22.604264",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "SendCloud",
@@ -50,7 +50,8 @@
   }
  ],
  "quick_entry": 1,
- "sort_field": "modified",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1

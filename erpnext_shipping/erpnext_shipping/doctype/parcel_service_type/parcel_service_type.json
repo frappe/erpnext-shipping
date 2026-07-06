@@ -63,10 +63,11 @@
   }
  ],
  "links": [],
- "modified": "2020-11-09 19:47:48.253666",
+ "modified": "2026-07-07 01:19:23.100501",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Parcel Service Type",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -83,7 +84,9 @@
   }
  ],
  "quick_entry": 1,
- "sort_field": "modified",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
