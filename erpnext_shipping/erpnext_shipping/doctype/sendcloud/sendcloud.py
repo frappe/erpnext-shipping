@@ -20,7 +20,6 @@ CURRENCY_DECIMALS = 2
 
 BASE_URL = "https://panel.sendcloud.sc/api"
 SHIPPING_OPTIONS_URL = f"{BASE_URL}/v3/shipping-options"
-SHIPMENTS_URL = f"{BASE_URL}/v3/shipments"
 SHIPMENTS_ANNOUNCE_URL = f"{BASE_URL}/v3/shipments/announce"
 LABELS_URL = f"{BASE_URL}/v2/labels"
 PARCELS_URL = f"{BASE_URL}/v2/parcels"
@@ -169,100 +168,59 @@ class SendCloudUtils:
 			},
 		}
 
-		if self.should_use_multicollo(service_info, parcels):
-			# Multicollo Logic: All packages are processed in a single API call
+		shipments_results = []
+		for parcel in parcels:
+			payload_single = payload.copy()
+			payload_single["parcels"] = [parcel]
 			try:
 				response = requests.post(
-					SHIPMENTS_URL,
-					json=payload,
+					SHIPMENTS_ANNOUNCE_URL,
+					json=payload_single,
 					auth=(self.api_key, self.api_secret),
 				)
 				response_data = response.json()
 				if errors := response_data.get("errors"):
 					frappe.msgprint(
-						_("Error occurred while creating shipment {0}:").format(shipment)
+						_("Error occurred while creating shipment for parcel {0}:").format(
+							parcel.get("order_number")
+						)
 						+ f"\n{self.format_api_errors(errors)}",
 						indicator="red",
 						alert=True,
 					)
-					return None
+					continue
 
 				parcels_data = response_data.get("data", {}).get("parcels", [])
 				if parcels_data:
-					shipment_ids = [str(parcel["id"]) for parcel in parcels_data]
-					tracking_numbers = [
-						parcel["tracking_number"] for parcel in parcels_data if parcel.get("tracking_number")
-					]
-					tracking_urls = [
-						parcel["tracking_url"] for parcel in parcels_data if parcel.get("tracking_url")
-					]
-					return {
-						"service_provider": "SendCloud",
-						"shipment_id": ", ".join(shipment_ids),
-						"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
-						"carrier_service": service_info["service_name"],
-						"shipment_amount": service_info["total_price"],
-						"awb_number": ", ".join(tracking_numbers),
-						"tracking_url": ", ".join(tracking_urls),
-					}
-			except Exception:
-				show_error_alert("creating SendCloud Shipment (multicollo)")
-		else:
-			# Non-Multicollo Logic: A separate API call is made for each package
-			shipments_results = []
-			for parcel in parcels:
-				payload_single = payload.copy()
-				payload_single["parcels"] = [parcel]
-				try:
-					response = requests.post(
-						SHIPMENTS_ANNOUNCE_URL,
-						json=payload_single,
-						auth=(self.api_key, self.api_secret),
+					parcel_data = parcels_data[0]
+					shipments_results.append(
+						{
+							"shipment_id": str(parcel_data["id"]),
+							"awb_number": parcel_data.get("tracking_number", ""),
+							"tracking_url": parcel_data.get("tracking_url", ""),
+							"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
+							"carrier_service": service_info["service_name"],
+							"shipment_amount": service_info["total_price"],
+						}
 					)
-					response_data = response.json()
-					if errors := response_data.get("errors"):
-						frappe.msgprint(
-							_("Error occurred while creating shipment for parcel {0}:").format(
-								parcel.get("order_number")
-							)
-							+ f"\n{self.format_api_errors(errors)}",
-							indicator="red",
-							alert=True,
-						)
-						continue
-
-					parcels_data = response_data.get("data", {}).get("parcels", [])
-					if parcels_data:
-						parcel_data = parcels_data[0]
-						shipments_results.append(
-							{
-								"shipment_id": str(parcel_data["id"]),
-								"awb_number": parcel_data.get("tracking_number", ""),
-								"tracking_url": parcel_data.get("tracking_url", ""),
-								"carrier": self.get_carrier(service_info["carrier"], post_or_get="post"),
-								"carrier_service": service_info["service_name"],
-								"shipment_amount": service_info["total_price"],
-							}
-						)
-				except Exception:
-					show_error_alert(f"creating SendCloud Shipment for parcel {parcel.get('order_number')}")
-			if shipments_results:
-				combined_result = {
-					"service_provider": "SendCloud",
-					"shipment_id": ", ".join(
-						item["shipment_id"] for item in shipments_results if item.get("shipment_id")
-					),
-					"carrier": shipments_results[0]["carrier"],
-					"carrier_service": shipments_results[0]["carrier_service"],
-					"shipment_amount": service_info["total_price"],
-					"awb_number": ", ".join(
-						item["awb_number"] for item in shipments_results if item.get("awb_number")
-					),
-					"tracking_url": ", ".join(
-						item["tracking_url"] for item in shipments_results if item.get("tracking_url")
-					),
-				}
-				return combined_result
+			except Exception:
+				show_error_alert(f"creating SendCloud Shipment for parcel {parcel.get('order_number')}")
+		if shipments_results:
+			return {
+				"service_provider": "SendCloud",
+				"shipment_id": ", ".join(
+					item["shipment_id"] for item in shipments_results if item.get("shipment_id")
+				),
+				"carrier": shipments_results[0]["carrier"],
+				"carrier_service": shipments_results[0]["carrier_service"],
+				"shipment_amount": service_info["total_price"],
+				"awb_number": ", ".join(
+					item["awb_number"] for item in shipments_results if item.get("awb_number")
+				),
+				"tracking_url": ", ".join(
+					item["tracking_url"] for item in shipments_results if item.get("tracking_url")
+				),
+			}
 
 		return None
 
@@ -358,7 +316,6 @@ class SendCloudUtils:
 		available_service.carrier = service["carrier"]["name"]
 		available_service.service_name = service["product"]["name"]
 		available_service.service_id = service["code"]
-		available_service.multicollo = service["functionalities"].get("multicollo", False)
 
 		quotes = service.get("quotes", [])
 		if quotes:
@@ -426,10 +383,3 @@ class SendCloudUtils:
 			+ f"Detail: {err.get('detail', 'N/A')}"
 			for err in errors
 		)
-
-	def should_use_multicollo(self, service_info, parcels):
-		# Only DPD reliably supports multicollo via /v3/shipments; other carriers
-		# (e.g. UPS) may report multicollo=true but fail at creation time.
-		carrier = (service_info.get("carrier") or "").lower()
-
-		return len(parcels) > 1 and carrier == "dpd" and service_info.get("multicollo")
