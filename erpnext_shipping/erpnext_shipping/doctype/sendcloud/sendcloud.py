@@ -108,6 +108,8 @@ class SendCloudUtils:
 				available_services.append(available_service)
 
 			return available_services
+		except frappe.ValidationError:
+			raise
 		except Exception:
 			show_error_alert("fetching SendCloud prices")
 
