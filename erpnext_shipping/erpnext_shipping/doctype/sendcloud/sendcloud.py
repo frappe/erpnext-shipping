@@ -100,7 +100,7 @@ class SendCloudUtils:
 				frappe.throw(self.format_api_errors(errors), title=_("SendCloud"))
 
 			if "data" not in response_data or not response_data["data"]:
-				frappe.throw(_("No shipping options found for this destination."), title=_("Sendcloud"))
+				frappe.throw(_("No shipping options found for this destination."), title=_("SendCloud"))
 
 			available_services = []
 			for service in response_data["data"]:
