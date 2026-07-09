@@ -11,6 +11,8 @@ from erpnext_shipping.erpnext_shipping.constants import state_codes
 from erpnext_shipping.erpnext_shipping.doctype.envia.constants import (
 	BASE_URL_API,
 	BASE_URL_QUERY,
+	ENVIA_STATUS_BY_ID,
+	ENVIA_STATUS_BY_NAME,
 	TEST_BASE_URL_API,
 	TEST_BASE_URL_QUERY,
 )
@@ -22,6 +24,21 @@ from erpnext_shipping.erpnext_shipping.utils import (
 )
 
 ENVIA_PROVIDER = "Envia"
+
+
+def map_envia_tracking_status(status) -> str:
+	"""Map an Envia status (numeric id or name) to an ERPNext Tracking Status option.
+
+	Falls back to "In Progress" for unknown/blank statuses so tracking never breaks on a
+	value that isn't in the Shipment field's allowed options.
+	"""
+	if status is None:
+		return "In Progress"
+
+	key = str(status).strip()
+	if key.isdigit():
+		return ENVIA_STATUS_BY_ID.get(int(key), "In Progress")
+	return ENVIA_STATUS_BY_NAME.get(key.lower(), "In Progress")
 
 
 class Envia(Document):
@@ -52,22 +69,41 @@ class EnviaUtils:
 		try:
 			headers = self.get_common_headers()
 			response = requests.request(method, url, headers=headers, json=data)
-			response_data = response.json()
-			if response.status_code != 200:
-				handle_shipping_error(
-					self.name,
-					ENVIA_PROVIDER,
-					f"Error in {method} request to {url}",
-					str(response_data),
-					raise_exception,
-				)
-				return {}
-			return response_data.get("data", [])
 		except Exception as e:
 			handle_shipping_error(
 				self.name, ENVIA_PROVIDER, f"Exception in {method} request to {url}", str(e), raise_exception
 			)
 			return {}
+
+		try:
+			response_data = response.json()
+		except ValueError:
+			body = response.text.strip()
+			message = (
+				"Envia returned an empty or invalid response for this carrier "
+				f"(HTTP {response.status_code}). This carrier may not support label "
+				"generation for this account — please try a different carrier."
+			)
+			handle_shipping_error(
+				self.name,
+				ENVIA_PROVIDER,
+				message,
+				body[:500] or "<empty response body>",
+				raise_exception,
+			)
+			return {}
+
+		if response.status_code != 200:
+			handle_shipping_error(
+				self.name,
+				ENVIA_PROVIDER,
+				f"Error in {method} request to {url}",
+				str(response_data),
+				raise_exception,
+			)
+			return {}
+
+		return response_data.get("data", [])
 
 	def get_available_couriers(self, country_code: str, is_international: int) -> list[str]:
 		url = f"{self.query_url}/available-carrier/{country_code}/{is_international}"
@@ -211,10 +247,11 @@ class EnviaUtils:
 		if not tracking_data:
 			return {}
 
+		envia_status = tracking_data.get("status")
 		return {
 			"awb_number": awb_number,
-			"tracking_status": tracking_data.get("status"),
-			"tracking_status_info": tracking_data.get("trackingNumber"),
+			"tracking_status": map_envia_tracking_status(envia_status),
+			"tracking_status_info": envia_status,
 			"tracking_url": tracking_data.get("trackUrl"),
 		}
 

@@ -440,7 +440,6 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	if not tracking_data:
 		return
 
-	shipment = frappe.get_doc("Shipment", shipment)
 	shipment.db_set(
 		{
 			"awb_number": tracking_data.get("awb_number"),
