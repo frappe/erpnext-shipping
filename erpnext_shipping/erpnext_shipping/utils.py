@@ -3,8 +3,13 @@
 import re
 
 import frappe
+import requests
 from frappe import _
 from frappe.utils.data import get_link_to_form
+
+COUNTRIESNOW_STATES_URL = "https://countriesnow.space/api/v0.1/countries/states"
+COUNTRY_STATES_CACHE_PREFIX = "countriesnow_states"
+COUNTRY_STATES_CACHE_TTL = 60 * 60 * 24  # 24 hours
 
 
 def get_tracking_url(carrier, tracking_number):
@@ -49,6 +54,20 @@ def validate_address(address):
 		frappe.throw(_("Please add a valid pincode in Address {0}.").format(address.address_title))
 
 
+def validate_parcels(doc, method=None):
+	if doc.docstatus != 0:
+		return
+
+	for parcel in doc.shipment_parcel:
+		for field in ("length", "width", "height"):
+			if (parcel.get(field) or 0) < 1:
+				frappe.throw(
+					_("Parcel row {idx}: {field_label} must be at least 1 cm.").format(
+						idx=parcel.idx, field_label=_(parcel.meta.get_label(field))
+					)
+				)
+
+
 def validate_phone(doc, method=None):
 	if doc.pickup_from_type == "Company":
 		phone_number = frappe.db.get_value("User", doc.pickup_contact_person, "phone")
@@ -67,6 +86,100 @@ def get_country_code(country_name):
 	if not country_code:
 		frappe.throw(_("Country Code not found for {0}").format(country_name))
 	return country_code
+
+
+def _normalize_state_key(state: str) -> str:
+	"""Normalize a state name for map lookup (lowercase, no spaces)."""
+	return re.sub(r"\s+", "", str(state).strip().lower())
+
+
+def _build_states_map(states: list[dict]) -> dict[str, str]:
+	"""Build a lookup of normalized state name → state_code from API state rows."""
+	states_map: dict[str, str] = {}
+	for item in states or []:
+		name = (item.get("name") or "").strip()
+		code = (item.get("state_code") or "").strip()
+		if not name or not code:
+			continue
+		states_map[name.lower()] = code
+		states_map[_normalize_state_key(name)] = code
+	return states_map
+
+
+def _fetch_states_from_api(country: str) -> dict[str, str]:
+	"""POST to countriesnow API and return name→code map for the country."""
+	try:
+		response = requests.post(
+			COUNTRIESNOW_STATES_URL,
+			headers={"Content-Type": "application/json"},
+			json={"country": country},
+			timeout=15,
+		)
+		response.raise_for_status()
+		payload = response.json()
+	except Exception:
+		frappe.log_error(
+			title=f"Failed to fetch states for country: {country}",
+			message=frappe.get_traceback(),
+		)
+		return {}
+
+	if payload.get("error"):
+		frappe.log_error(
+			title=f"CountriesNow API error for country: {country}",
+			message=str(payload),
+		)
+		return {}
+
+	states = (payload.get("data") or {}).get("states") or []
+	return _build_states_map(states)
+
+
+def get_states_for_country(country: str) -> dict[str, str]:
+	"""Return a mapping of state name keys → state codes for a country.
+
+	Results are stored in ``frappe.cache`` keyed by country name. On a cache hit
+	the cached map is returned; on a miss the countriesnow API is called and the
+	response is cached for later use.
+	"""
+	if not country:
+		return {}
+
+	country_key = str(country).strip().lower()
+	if not country_key:
+		return {}
+
+	cache_key = f"{COUNTRY_STATES_CACHE_PREFIX}:{country_key}"
+	cached = frappe.cache.get_value(cache_key)
+	if cached is not None:
+		return cached
+
+	states_map = _fetch_states_from_api(country_key)
+	# Cache successful lookups; avoid long-lived empty cache on transient API failures
+	if states_map:
+		frappe.cache.set_value(cache_key, states_map, expires_in_sec=COUNTRY_STATES_CACHE_TTL)
+
+	return states_map
+
+
+def get_state_code(state: str | None, country: str | None) -> str | None:
+	"""Resolve a state name to its state code for the given country.
+
+	Uses the countriesnow states API (via cache). If no match is found, returns
+	the original state string so callers can still send a value to the carrier.
+	"""
+	if not state:
+		return None
+
+	state = str(state).strip()
+	if not country:
+		return state
+
+	states_map = get_states_for_country(country)
+	if not states_map:
+		return state
+
+	return states_map.get(state.lower()) or states_map.get(_normalize_state_key(state)) or state
 
 
 def get_contact(contact_name):
@@ -154,23 +267,22 @@ def get_enabled_doc_for_company(doctype: str, company: str) -> dict | None:
 
 
 def handle_shipping_error(
-	name: str, provider: str, message: str, exception: Exception, raise_exception: bool
+	name: str, provider: str, message: str, details: str, raise_exception: bool = True
 ) -> None:
-	frappe.log_error(message, str(exception))
-	throw_shipping_error(name, provider, f"{message}: {str(exception)}", raise_exception)
+	"""Log the error; show a message (and optionally raise) only when raise_exception is True.
 
+	When raise_exception is False (e.g. soft rate/carrier probes), only write Error Log
+	so the UI is not flooded with provider failures for individual carriers.
+	"""
+	frappe.log_error(title=f"{provider}: {message}", message=str(details))
+	if not raise_exception:
+		return
 
-def throw_shipping_error(doc_name: str, provider: str, message: str, raise_exception: bool) -> None:
-	"""
-	Raises a formatted Frappe validation error with a link to disable the Shipping Provider.
-	"""
 	frappe.msgprint(
-		msg=_(
-			f"<b>{provider}:</b> {message}<br>"
-			f"Disable the {provider} Account if you need to continue without {provider}: "
-			f"{get_link_to_form(provider, doc_name)}"
+		msg=_("<b>{0}:</b> {1}<br>Disable the {0} Account if you need to continue without {0}: {2}").format(
+			provider, f"{message}: {details}", get_link_to_form(provider, name)
 		),
-		raise_exception=_(raise_exception),
+		raise_exception=raise_exception,
 	)
 
 
