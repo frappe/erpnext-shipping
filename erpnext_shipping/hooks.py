@@ -29,7 +29,7 @@ app_include_js = "shipping.bundle.js"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {"Shipment": "public/js/shipment.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -125,6 +125,7 @@ scheduler_events = {"daily": ["erpnext_shipping.erpnext_shipping.utils.update_tr
 doc_events = {
 	"Shipment": {
 		"validate": [
+			"erpnext_shipping.erpnext_shipping.utils.validate_parcels",
 			"erpnext_shipping.erpnext_shipping.utils.validate_phone",
 		]
 	},
