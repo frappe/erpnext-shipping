@@ -11,7 +11,11 @@
   "api_key",
   "column_break_zsic",
   "enabled",
-  "sandbox"
+  "sandbox",
+  "base_api_url",
+  "base_url_query",
+  "test_base_api_url",
+  "test_base_url_query"
  ],
  "fields": [
   {
@@ -50,15 +54,41 @@
    "fieldname": "sandbox",
    "fieldtype": "Check",
    "label": "Sandbox"
+  },
+  {
+   "fieldname": "base_api_url",
+   "fieldtype": "Data",
+   "label": "Base API URL",
+   "mandatory_depends_on": "eval: doc.enabled"
+  },
+  {
+   "depends_on": "eval: doc.sandbox",
+   "fieldname": "test_base_api_url",
+   "fieldtype": "Data",
+   "label": "Test Base API URL",
+   "mandatory_depends_on": "eval: doc.sandbox"
+  },
+  {
+   "fieldname": "base_url_query",
+   "fieldtype": "Data",
+   "label": "Base URL Query",
+   "mandatory_depends_on": "eval: doc.enabled"
+  },
+  {
+   "depends_on": "eval: doc.sandbox",
+   "fieldname": "test_base_url_query",
+   "fieldtype": "Data",
+   "label": "Test Base URL Query",
+   "mandatory_depends_on": "eval: doc.sandbox"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-26 15:24:50.905421",
+ "modified": "2026-07-14 16:43:36.384375",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "Envia",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -74,6 +104,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

@@ -1,7 +1,4 @@
-TEST_BASE_URL_API = "https://api-test.envia.com"
-TEST_BASE_URL_QUERY = "https://queries-test.envia.com"
-BASE_URL_API = "https://api.envia.com"
-BASE_URL_QUERY = "https://queries.envia.com"
+ENVIA_PROVIDER = "Envia"
 
 # ERPNext's Shipment "Tracking Status" field only allows: In Progress, Delivered, Returned, Lost.
 # Envia reports ~28 granular statuses (by numeric id or name), so map each to the closest

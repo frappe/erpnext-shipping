@@ -6,10 +6,8 @@ import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
 from frappe import _
 
-from erpnext_shipping.erpnext_shipping.doctype.envia.envia import (
-	ENVIA_PROVIDER,
-	EnviaUtils,
-)
+from erpnext_shipping.erpnext_shipping.doctype.envia.constants import ENVIA_PROVIDER
+from erpnext_shipping.erpnext_shipping.doctype.envia.envia import EnviaUtils
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
 	get_letmeship_utils,
@@ -92,19 +90,30 @@ def fetch_shipping_rates(
 		shipment_prices += sendcloud_prices
 
 	if envia_enabled:
+		if pickup_from_type != "Company":
+			envia_pickup_contact = get_contact(pickup_contact_name)
+		else:
+			envia_pickup_contact = get_company_contact(user=pickup_contact_name)
+			envia_pickup_contact.email_id = envia_pickup_contact.pop("email", None)
+
+		envia_delivery_contact = get_contact(delivery_contact_name)
+
 		envia = EnviaUtils(company=pickup_company)
-		envia = envia.get_available_services(
-			delivery_address=delivery_address,
-			pickup_address=pickup_address,
-			parcels=parcels,
-			delivery_contact=delivery_contact,
-			pickup_contact=pickup_contact,
-			total_weight=total_weight,
-			value_of_goods=value_of_goods,
-			pickup_company=pickup_company,
-			description_of_content=description_of_content,
+		envia_prices = (
+			envia.get_available_services(
+				delivery_address=delivery_address,
+				pickup_address=pickup_address,
+				parcels=parcels,
+				delivery_contact=envia_delivery_contact,
+				pickup_contact=envia_pickup_contact,
+				total_weight=total_weight,
+				value_of_goods=value_of_goods,
+				pickup_company=pickup_company,
+				description_of_content=description_of_content,
+			)
+			or []
 		)
-		envia_prices = match_parcel_service_type_carrier(envia, "carrier", "service_name")
+		envia_prices = match_parcel_service_type_carrier(envia_prices, "carrier", "service_name")
 		shipment_prices += envia_prices
 
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
@@ -194,6 +203,7 @@ def create_shipment(
 			service_info=service_info,
 			total_weight=total_weight,
 			shipment=shipment,
+			pickup_company=pickup_company,
 		)
 
 	if shipment_info:

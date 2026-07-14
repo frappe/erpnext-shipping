@@ -5,25 +5,28 @@ import json
 
 import frappe
 import requests
+from frappe import _
 from frappe.model.document import Document
+from frappe.utils import get_url_to_list
 
-from erpnext_shipping.erpnext_shipping.constants import state_codes
 from erpnext_shipping.erpnext_shipping.doctype.envia.constants import (
-	BASE_URL_API,
-	BASE_URL_QUERY,
+	ENVIA_PROVIDER,
 	ENVIA_STATUS_BY_ID,
 	ENVIA_STATUS_BY_NAME,
-	TEST_BASE_URL_API,
-	TEST_BASE_URL_QUERY,
 )
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_enabled_doc_for_company,
+	get_state_code,
 	handle_shipping_error,
 	save_label_as_attachment,
 	validate_enabled_service,
 )
 
-ENVIA_PROVIDER = "Envia"
+# Envia shipment type: 1 = package (see Envia ship API docs)
+ENVIA_SHIPMENT_TYPE = 1
+
+# Re-export for callers that import ENVIA_PROVIDER from this module
+__all__ = ["ENVIA_PROVIDER", "Envia", "EnviaUtils", "map_envia_tracking_status"]
 
 
 def map_envia_tracking_status(status) -> str:
@@ -54,9 +57,33 @@ class Envia(Document):
 class EnviaUtils:
 	def __init__(self, company: str):
 		settings = get_enabled_doc_for_company(ENVIA_PROVIDER, company)
-		self.name = settings.get("name")
-		self.api_url = TEST_BASE_URL_API if settings.get("sandbox") else BASE_URL_API
-		self.query_url = TEST_BASE_URL_QUERY if settings.get("sandbox") else BASE_URL_QUERY
+		if not settings:
+			frappe.throw(
+				_("No enabled Envia account found for company {0}. Please configure Envia in {1}.").format(
+					frappe.bold(company),
+					f'<a href="{get_url_to_list(ENVIA_PROVIDER)}">{ENVIA_PROVIDER}</a>',
+				),
+				title=_("Envia not configured"),
+			)
+
+		self.name = settings.name
+		# Prefer DocType URL fields; sandbox uses test URLs when configured
+		if settings.sandbox:
+			self.api_url = (settings.test_base_api_url or settings.base_api_url or "").rstrip("/")
+			self.query_url = (settings.test_base_url_query or settings.base_url_query or "").rstrip("/")
+		else:
+			self.api_url = (settings.base_api_url or "").rstrip("/")
+			self.query_url = (settings.base_url_query or "").rstrip("/")
+
+		if not self.api_url or not self.query_url:
+			frappe.throw(
+				_(
+					"Envia API URLs are not configured for {0}. "
+					"Set Base API URL and Base URL Query (and test URLs if Sandbox is enabled)."
+				).format(frappe.bold(settings.name)),
+				title=_("Envia URLs missing"),
+			)
+
 		self.api_key = settings.get_password("api_key")
 
 	def get_common_headers(self) -> dict:
@@ -65,7 +92,29 @@ class EnviaUtils:
 	def log_error(self, message: str, details: str = None):
 		frappe.log_error(details or frappe.get_traceback(), message)
 
-	def _make_request(self, method: str, url: str, data: dict = None, raise_exception: bool = True) -> dict:
+	@staticmethod
+	def _extract_envia_error(response_data) -> str | None:
+		"""Parse Envia error payloads (often returned with HTTP 200 + meta=error)."""
+		if not isinstance(response_data, dict):
+			return None
+
+		err = response_data.get("error")
+		if response_data.get("meta") == "error" or err:
+			if isinstance(err, dict):
+				return (
+					err.get("message")
+					or err.get("description")
+					or f"Envia error code {err.get('code', 'unknown')}"
+				)
+			if err:
+				return str(err)
+			return str(response_data)
+
+		return None
+
+	def _make_request(
+		self, method: str, url: str, data: dict = None, raise_exception: bool = True
+	) -> list | dict:
 		try:
 			headers = self.get_common_headers()
 			response = requests.request(method, url, headers=headers, json=data)
@@ -73,7 +122,7 @@ class EnviaUtils:
 			handle_shipping_error(
 				self.name, ENVIA_PROVIDER, f"Exception in {method} request to {url}", str(e), raise_exception
 			)
-			return {}
+			return []
 
 		try:
 			response_data = response.json()
@@ -91,24 +140,30 @@ class EnviaUtils:
 				body[:500] or "<empty response body>",
 				raise_exception,
 			)
-			return {}
+			return []
 
-		if response.status_code != 200:
+		envia_error = self._extract_envia_error(response_data)
+		if response.status_code != 200 or envia_error:
 			handle_shipping_error(
 				self.name,
 				ENVIA_PROVIDER,
-				f"Error in {method} request to {url}",
+				envia_error or f"Error in {method} request to {url}",
 				str(response_data),
 				raise_exception,
 			)
-			return {}
+			return []
 
-		return response_data.get("data", [])
+		data_payload = response_data.get("data", [])
+		return data_payload if data_payload is not None else []
 
 	def get_available_couriers(self, country_code: str, is_international: int) -> list[str]:
 		url = f"{self.query_url}/available-carrier/{country_code}/{is_international}"
 		carriers = self._make_request("GET", url, raise_exception=False)
-		return [carrier.get("name") for carrier in carriers]
+		if not isinstance(carriers, list):
+			return []
+		return [
+			carrier.get("name") for carrier in carriers if isinstance(carrier, dict) and carrier.get("name")
+		]
 
 	def get_available_services(
 		self,
@@ -122,51 +177,99 @@ class EnviaUtils:
 		pickup_company: str,
 		description_of_content: str,
 	) -> list[dict]:
-		carriers = self.get_available_couriers(pickup_address.get("country_code", "").upper(), 0)
-		origin = self.build_address(pickup_address, pickup_contact)
+		origin_country = (pickup_address.get("country_code") or "").upper()
+		destination_country = (delivery_address.get("country_code") or "").upper()
+		is_international = int(
+			bool(origin_country and destination_country and origin_country != destination_country)
+		)
+
+		carriers = self.get_available_couriers(origin_country, is_international)
+		origin = self.build_address(pickup_address, pickup_contact, company=pickup_company)
 		destination = self.build_address(delivery_address, delivery_contact)
 		packages = self.build_packages(parcels, total_weight, value_of_goods, description_of_content)
 		currency = self.get_company_currency(pickup_company)
 
 		available_services = []
-		if currency:
-			for carrier in carriers:
-				payload = {
-					"origin": origin,
-					"destination": destination,
-					"packages": packages,
-					"shipment": {"carrier": carrier, "type": 1},
-					"settings": {
-						"printFormat": "PDF",
-						"printSize": "STOCK_4X6",
-						"currency": currency,
-						"cashOnDelivery": value_of_goods,
-						"comments": "Handle with care",
-					},
-				}
-				services = self._make_request(
-					"POST", f"{self.api_url}/ship/rate/", payload, raise_exception=False
-				)
-				available_services.extend([self.parse_service_data(service, parcels) for service in services])
+		if not carriers:
+			frappe.msgprint(
+				_("No Envia carriers available for {0} ({1} shipment).").format(
+					origin_country, _("international") if is_international else _("domestic")
+				),
+				indicator="orange",
+				alert=True,
+			)
+			return available_services
+
+		if not currency:
+			frappe.msgprint(
+				_("Company default currency is not set for {0}.").format(frappe.bold(pickup_company)),
+				indicator="orange",
+				alert=True,
+			)
+			return available_services
+
+		for carrier in carriers:
+			payload = {
+				"origin": origin,
+				"destination": destination,
+				"packages": packages,
+				"shipment": {"carrier": carrier, "type": ENVIA_SHIPMENT_TYPE},
+				"settings": {
+					"printFormat": "PDF",
+					"printSize": "STOCK_4X6",
+					"currency": currency,
+					"cashOnDelivery": value_of_goods,
+					"comments": description_of_content or "",
+				},
+			}
+			services = self._make_request(
+				"POST", f"{self.api_url}/ship/rate/", payload, raise_exception=False
+			)
+			if not isinstance(services, list):
+				continue
+			available_services.extend(
+				[
+					self.parse_service_data(service, parcels)
+					for service in services
+					if isinstance(service, dict)
+				]
+			)
 
 		return available_services
 
 	def create_shipment(self, **kwargs) -> dict:
+		description_of_content = kwargs.get("description_of_content") or "Handle with care"
+		pickup_company = kwargs.get("pickup_company")
+		if not pickup_company and kwargs.get("pickup_address"):
+			pickup_company = kwargs["pickup_address"].get("address_title")
+
 		payload = {
-			"origin": self.build_address(kwargs["pickup_address"], kwargs["pickup_contact"]),
-			"destination": self.build_address(kwargs["delivery_address"], kwargs["delivery_contact"]),
+			"origin": self.build_address(
+				kwargs["pickup_address"],
+				kwargs["pickup_contact"],
+				company=pickup_company,
+			),
+			"destination": self.build_address(
+				kwargs["delivery_address"],
+				kwargs["delivery_contact"],
+				company=kwargs.get("delivery_company_name"),
+			),
 			"packages": self.build_packages(
 				json.loads(kwargs["shipment_parcel"]),
 				kwargs["total_weight"],
 				kwargs["value_of_goods"],
-				kwargs["description_of_content"],
+				description_of_content,
 			),
 			"shipment": {
 				"carrier": kwargs["service_info"].get("carrier"),
 				"service": kwargs["service_info"].get("service_id"),
-				"type": 1,
+				"type": ENVIA_SHIPMENT_TYPE,
 			},
-			"settings": {"printFormat": "PDF", "printSize": "STOCK_4X6", "comments": "Handle with care"},
+			"settings": {
+				"printFormat": "PDF",
+				"printSize": "STOCK_4X6",
+				"comments": description_of_content,
+			},
 		}
 		shipment_data = self._make_request("POST", f"{self.api_url}/ship/generate/", payload)
 
@@ -181,28 +284,40 @@ class EnviaUtils:
 			}
 		return {}
 
-	def build_address(self, address: dict, contact: dict | str) -> dict:
+	def build_address(self, address: dict, contact: dict | str, company: str | None = None) -> dict:
 		if not (contact and address):
 			return None
 		if isinstance(contact, str):
 			contact = contact.split("<br>")
 
-		name = contact[0] if isinstance(contact, list) else contact.get("first_name")
-		email = contact[1] if isinstance(contact, list) else contact.get("email_id")
-		phone = contact[2] if isinstance(contact, list) else contact.get("phone")
+		if isinstance(contact, list):
+			name = contact[0]
+			email = contact[1]
+			phone = contact[2]
+		else:
+			name = (contact.get("first_name") or "").strip() or (contact.get("last_name") or "").strip()
+			if contact.get("first_name") and contact.get("last_name"):
+				name = f"{contact.get('first_name')} {contact.get('last_name')}".strip()
+			email = contact.get("email_id") or ""
+			phone = contact.get("phone") or contact.get("mobile_no") or ""
+		country_code = (address.get("country_code") or "").upper()
+		company_name = company or address.get("address_title") or ""
+
+		# Resolve state name → state code via countriesnow API (cached in utils.get_state_code)
+		state_code = get_state_code(address.get("state"), address.get("country"))
 
 		return {
-			"name": name,
-			"company": "Envia India",
+			"name": name or company_name,
+			"company": company_name,
 			"email": email,
 			"phone": phone,
 			"street": address.get("address_line1"),
 			"number": address.get("address_line2"),
 			"district": address.get("city"),
 			"city": address.get("city"),
-			"state": state_codes.get(address.get("state", "").replace(" ", "").lower()),
+			"state": state_code,
 			"category": 1,
-			"country": address.get("country_code", "").upper(),
+			"country": country_code,
 			"postalCode": address.get("pincode"),
 			"reference": "",
 		}
@@ -232,12 +347,12 @@ class EnviaUtils:
 	def parse_service_data(self, service: dict, parcels: list[dict]) -> dict:
 		return {
 			"service_provider": ENVIA_PROVIDER,
-			"carrier": service["carrier"],
-			"service_name": service["serviceDescription"],
-			"currency": service["currency"],
-			"total_price": service["totalPrice"],
-			"carrier_id": service["carrierId"],
-			"service_id": service["service"],
+			"carrier": service.get("carrier"),
+			"service_name": service.get("serviceDescription"),
+			"currency": service.get("currency"),
+			"total_price": service.get("totalPrice"),
+			"carrier_id": service.get("carrierId"),
+			"service_id": service.get("service"),
 		}
 
 	def get_tracking_data(self, awb_number: str) -> dict:
