@@ -226,6 +226,12 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	if delivery_notes is None:
 		delivery_notes = []
 
+	shipment = frappe.get_doc("Shipment", shipment)
+	pickup_company = shipment.pickup_company
+	carrier = shipment.carrier
+	tracking_url = shipment.tracking_url
+	awb_number = awb_number or shipment.awb_number
+
 	# Update Tracking info in Shipment
 	tracking_data = None
 	if service_provider == LETMESHIP_PROVIDER:
