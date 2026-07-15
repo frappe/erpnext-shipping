@@ -291,9 +291,9 @@ class EnviaUtils:
 			contact = contact.split("<br>")
 
 		if isinstance(contact, list):
-			name = contact[0]
-			email = contact[1]
-			phone = contact[2]
+			name = contact[0] if len(contact) > 0 else ""
+			email = contact[1] if len(contact) > 1 else ""
+			phone = contact[2] if len(contact) > 2 else ""
 		else:
 			name = (contact.get("first_name") or "").strip() or (contact.get("last_name") or "").strip()
 			if contact.get("first_name") and contact.get("last_name"):

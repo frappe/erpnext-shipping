@@ -263,12 +263,7 @@ def get_enabled_doc_for_company(doctype: str, company: str) -> dict | None:
 	if frappe.db.exists(doctype, filters):
 		return frappe.get_doc(doctype, filters)
 
-	frappe.throw(
-		_("No enabled Provider account found for company {0}. Please configure Provider.").format(
-			frappe.bold(company),
-		),
-		title=_("Provider not configured"),
-	)
+	return None
 
 
 def handle_shipping_error(
