@@ -115,7 +115,7 @@ def fetch_shipping_rates(
 		)
 		envia_prices = match_parcel_service_type_carrier(envia_prices, "carrier", "service_name")
 		shipment_prices += envia_prices
-
+	shipment_prices = [item for item in shipment_prices if "total_price" in item]
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
 
@@ -142,6 +142,11 @@ def create_shipment(
 ):
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
+
+	# SECURITY CHECK: Load the true shipment document to prevent cross-company credential misuse
+	shipment_doc = frappe.get_doc("Shipment", shipment)
+	# Override the client-provided pickup_company with the authoritative DB value
+	pickup_company = shipment_doc.pickup_company
 
 	if delivery_notes is None:
 		delivery_notes = []
@@ -207,8 +212,7 @@ def create_shipment(
 		)
 
 	if shipment_info:
-		shipment = frappe.get_doc("Shipment", shipment)
-		shipment.db_set(
+		shipment_doc.db_set(
 			{
 				"service_provider": shipment_info.get("service_provider"),
 				"carrier": shipment_info.get("carrier"),
