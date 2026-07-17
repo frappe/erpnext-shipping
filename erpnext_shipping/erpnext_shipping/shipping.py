@@ -22,22 +22,23 @@ from erpnext_shipping.erpnext_shipping.utils import (
 	save_label_as_attachment,
 )
 from erpnext_shipping.erpnext_shipping.constants import status_map
+from frappe.utils.data import Any
 
 
 @frappe.whitelist()
 def fetch_shipping_rates(
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	parcels,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
-	pickup_company=None,
-):
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	parcels: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: str,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	pickup_company: str | None = None,
+) -> list[dict[str, Any]]:
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
@@ -116,23 +117,23 @@ def fetch_shipping_rates(
 
 @frappe.whitelist()
 def create_shipment(
-	shipment,
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	shipment_parcel,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	service_data,
-	shipment_notific_email=None,
-	tracking_notific_email=None,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
-	delivery_notes=None,
-	pickup_company=None,
-):
+	shipment: str,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	shipment_parcel: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: str,
+	service_data: str,
+	shipment_notific_email: str | None = None,
+	tracking_notific_email: str | None = None,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	delivery_notes: str | None = None,
+	pickup_company: str | None = None,
+) -> dict[str, Any] | None:
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
@@ -221,7 +222,7 @@ def get_delivery_company_name(shipment: str) -> str | None:
 
 
 @frappe.whitelist()
-def print_shipping_label(shipment: str):
+def print_shipping_label(shipment: str) -> list[str]:
 	shipment_doc = frappe.get_doc("Shipment", shipment)
 	service_provider = shipment_doc.service_provider
 	shipment_id = shipment_doc.shipment_id
@@ -262,7 +263,13 @@ def print_shipping_label(shipment: str):
 
 
 @frappe.whitelist()
-def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None, awb_number=None):
+def update_tracking(
+	shipment: str,
+	service_provider: str,
+	shipment_id: str,
+	delivery_notes: str | None = None,
+	awb_number: str | None = None,
+) -> dict[str, Any] | None:
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
@@ -311,7 +318,7 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	return tracking_data
 
 
-def normalize_tracking_data(tracking_data):
+def normalize_tracking_data(tracking_data: dict[str, Any]) -> dict[str, Any]:
 	"""Map carrier statuses to Shipment's supported status values."""
 	tracking_data = frappe._dict(tracking_data)
 	raw_status = tracking_data.get("tracking_status")
@@ -320,7 +327,11 @@ def normalize_tracking_data(tracking_data):
 	return tracking_data
 
 
-def update_delivery_note(delivery_notes, shipment_info=None, tracking_info=None):
+def update_delivery_note(
+	delivery_notes: list[str],
+	shipment_info: dict[str, Any] | None = None,
+	tracking_info: dict[str, Any] | None = None,
+):
 	# Update Shipment Info in Delivery Note
 	# Using db_set since some services might not exist
 	delivery_notes = list(dict.fromkeys(delivery_notes))
