@@ -241,20 +241,33 @@ def update_tracking_info_daily():
 			"shipment_id": ["!=", ""],
 			"tracking_status": ["!=", "Delivered"],
 		},
+		fields=[
+			"name",
+			"service_provider",
+			"shipment_id",
+			"shipment_delivery_note",
+		],
 	)
+
 	for shipment in shipments:
-		shipment_doc = frappe.get_doc("Shipment", shipment.name)
 		tracking_info = update_tracking(
 			shipment.name,
-			shipment_doc.service_provider,
-			shipment_doc.shipment_id,
-			shipment_doc.shipment_delivery_note,
+			shipment.service_provider,
+			shipment.shipment_id,
+			shipment.shipment_delivery_note,
 		)
 
 		if tracking_info:
-			fields = ["awb_number", "tracking_status", "tracking_status_info", "tracking_url"]
-			for field in fields:
-				shipment_doc.db_set(field, tracking_info.get(field))
+			frappe.db.set_value(
+				"Shipment",
+				shipment.name,
+				{
+					"awb_number": tracking_info.get("awb_number"),
+					"tracking_status": tracking_info.get("tracking_status"),
+					"tracking_status_info": tracking_info.get("tracking_status_info"),
+					"tracking_url": tracking_info.get("tracking_url"),
+				},
+			)
 
 
 def get_enabled_doc_for_company(doctype: str, company: str) -> dict | None:
@@ -307,6 +320,12 @@ def save_label_as_attachment(shipment: str, content: bytes = None, index: int = 
 		attachment.file_name = f"label_{shipment}_{index}.pdf"
 	else:
 		attachment.file_name = f"label_{shipment}.pdf"
+	if url and not content:
+		import requests as _requests
+
+		resp = _requests.get(url, timeout=30)
+		resp.raise_for_status()
+		content = resp.content
 	attachment.content = content
 	attachment.folder = "Home/Attachments"
 	attachment.attached_to_doctype = "Shipment"

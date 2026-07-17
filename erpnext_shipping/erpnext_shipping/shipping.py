@@ -40,6 +40,9 @@ def fetch_shipping_rates(
 	pickup_contact=None,
 	delivery_contact=None,
 ):
+	if not frappe.has_permission("Shipment", "write"):
+		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
+
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
@@ -140,6 +143,8 @@ def create_shipment(
 	delivery_notes=None,
 	pickup_company=None,
 ):
+	if not frappe.has_permission("Shipment", "write"):
+		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
@@ -231,7 +236,9 @@ def create_shipment(
 
 
 def get_delivery_company_name(shipment: str) -> str | None:
-	shipment_doc = frappe.get_doc("Shipment", shipment)
+	shipment_doc = frappe.db.get_value(
+		"Shipment", shipment, ["delivery_customer", "delivery_supplier", "delivery_company"], as_dict=True
+	)
 	if shipment_doc.delivery_customer:
 		return frappe.db.get_value("Customer", shipment_doc.delivery_customer, "customer_name")
 	if shipment_doc.delivery_supplier:
@@ -244,7 +251,12 @@ def get_delivery_company_name(shipment: str) -> str | None:
 
 @frappe.whitelist()
 def print_shipping_label(shipment: str):
-	shipment_doc = frappe.get_doc("Shipment", shipment)
+	if not frappe.has_permission("Shipment", "read"):
+		frappe.throw(_("You do not have permission to access Shipment."), frappe.PermissionError)
+
+	shipment_doc = frappe.db.get_value(
+		"Shipment", shipment, ["service_provider", "shipment_id"], as_dict=True
+	)
 	service_provider = shipment_doc.service_provider
 	shipment_id = shipment_doc.shipment_id
 	shipping_label = None
@@ -271,6 +283,9 @@ def print_shipping_label(shipment: str):
 
 @frappe.whitelist()
 def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None, awb_number=None):
+	if not frappe.has_permission("Shipment", "write"):
+		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
+
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
@@ -288,9 +303,9 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
-	elif service_provider == ENVIA_PROVIDER and awb_number:
+	elif service_provider == ENVIA_PROVIDER and shipment.awb_number:
 		envia = EnviaUtils(company=pickup_company)
-		tracking_data = envia.get_tracking_data(awb_number)
+		tracking_data = envia.get_tracking_data(shipment.awb_number)
 
 	if not tracking_data:
 		return
@@ -314,13 +329,25 @@ def update_delivery_note(delivery_notes, shipment_info=None, tracking_info=None)
 	delivery_notes = list(set(delivery_notes))
 
 	for delivery_note in delivery_notes:
-		dl_doc = frappe.get_doc("Delivery Note", delivery_note)
 		if shipment_info:
-			dl_doc.db_set("delivery_type", "Parcel Service")
-			dl_doc.db_set("parcel_service", shipment_info.get("carrier"))
-			dl_doc.db_set("parcel_service_type", shipment_info.get("carrier_service"))
+			frappe.db.set_value(
+				"Delivery Note",
+				delivery_note,
+				{
+					"delivery_type": "Parcel Service",
+					"parcel_service": shipment_info.get("carrier"),
+					"parcel_service_type": shipment_info.get("carrier_service"),
+				},
+			)
+
 		if tracking_info:
-			dl_doc.db_set("tracking_number", tracking_info.get("awb_number"))
-			dl_doc.db_set("tracking_url", tracking_info.get("tracking_url"))
-			dl_doc.db_set("tracking_status", tracking_info.get("tracking_status"))
-			dl_doc.db_set("tracking_status_info", tracking_info.get("tracking_status_info"))
+			frappe.db.set_value(
+				"Delivery Note",
+				delivery_note,
+				{
+					"tracking_number": tracking_info.get("awb_number"),
+					"tracking_url": tracking_info.get("tracking_url"),
+					"tracking_status": tracking_info.get("tracking_status"),
+					"tracking_status_info": tracking_info.get("tracking_status_info"),
+				},
+			)
