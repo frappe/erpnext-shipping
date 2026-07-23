@@ -7,16 +7,19 @@ import frappe
 import requests
 from frappe import _
 from frappe.model.document import Document
-
-from erpnext_shipping.erpnext_shipping.doctype.shiprocket.constants import SHIPROCKET_API_BASE_URL
+from requests.exceptions import RequestException
+from erpnext_shipping.erpnext_shipping.doctype.shiprocket.constants import (
+	SHIPROCKET_API_BASE_URL,
+	SHIPROCKET_PROVIDER,
+)
 from erpnext_shipping.erpnext_shipping.doctype.shiprocket.payloads import get_order_creation_payload
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_enabled_doc_for_company,
-	handle_shipping_error,
+	throw_shipping_error,
 	validate_enabled_service,
 )
 
-SHIPROCKET_PROVIDER = "Shiprocket"
+REQUEST_TIMEOUT = 30
 
 
 class Shiprocket(Document):
@@ -57,45 +60,51 @@ class ShiprocketUtils:
 	) -> dict:
 		headers = self.get_headers() if not header else header
 		try:
-			response = requests.request(request_type, url, headers=headers, data=json.dumps(payload))
+			response = requests.request(
+				request_type, url, headers=headers, data=json.dumps(payload), timeout=REQUEST_TIMEOUT
+			)
 			response.raise_for_status()
 			if response.status_code == 200:
 				return response.json()
 			else:
-				handle_shipping_error(
+				throw_shipping_error(
 					self.name,
 					SHIPROCKET_PROVIDER,
-					f"Error {response.status_code} during {request_type} request to {url}",
-					response.text,
+					f"Error {response.status_code} during {request_type} request to {url}: {response.text}",
 					raise_exception,
 				)
-		except requests.exceptions.HTTPError as e:
+		except requests.exceptions.HTTPError:
 			if response.status_code in (401, 403) and not retry:
 				self.generate_token(retry=True)
 				return self.request_call(payload, request_type, url, retry=True, raise_exception=False)
 			else:
-				handle_shipping_error(
+				throw_shipping_error(
 					self.name,
 					SHIPROCKET_PROVIDER,
-					f"Error {response.status_code} during {request_type} request to {url}",
-					response.text,
+					f"Error {response.status_code} during {request_type} request to {url}: {response.text}",
 					raise_exception,
 				)
-		except requests.RequestException as e:
-			handle_shipping_error(
+		except (RequestException, ValueError) as e:
+			throw_shipping_error(
 				self.name,
 				SHIPROCKET_PROVIDER,
-				f"Error during {request_type} request to {url}",
-				e,
+				f"Error during {request_type} request to {url}: {e}",
 				raise_exception,
 			)
 		return {}
 
 	def get_available_services(
-		self, parcels: list, delivery_address_name: str, pickup_address_name: str, total_weight: float
+		self,
+		pickup_address: dict,
+		delivery_address: dict,
+		parcels: list,
+		description_of_content: str = None,
 	) -> list:
-		pickup_postcode = self._get_postcode(pickup_address_name)
-		delivery_postcode = self._get_postcode(delivery_address_name)
+		"""Fetch available courier services and rates from Shiprocket."""
+		pickup_postcode = pickup_address.get("pincode", "")
+		delivery_postcode = delivery_address.get("pincode", "")
+		total_weight = self.calculate_total_weight(parcels)
+
 		url = f"{SHIPROCKET_API_BASE_URL}/courier/serviceability"
 		payload = {
 			"pickup_postcode": pickup_postcode,
@@ -107,10 +116,9 @@ class ShiprocketUtils:
 		services_available = data.get("data", {}).get("available_courier_companies", [])
 		return [self._get_service_dict(service, parcels) for service in services_available]
 
-	def _get_postcode(self, address_name: str) -> str:
-		if frappe.db.exists("Address", address_name):
-			return frappe.get_doc("Address", address_name).pincode
-		return ""
+	def calculate_total_weight(self, parcels: list) -> float:
+		"""Calculate total weight from parcels list."""
+		return sum(float(parcel.get("weight", 0)) * int(parcel.get("count", 1)) for parcel in parcels)
 
 	def _get_service_dict(self, service: dict, parcels: list) -> dict:
 		"""Returns a dictionary with service info."""
@@ -170,13 +178,16 @@ class ShiprocketUtils:
 			"awb_number": response_data["response"]["data"]["awb_code"],
 		}
 
-	def generate_label(self, shipment_id: str, shipment: dict) -> dict:
+	def get_label(self, shipment_id: str) -> str:
+		"""Generate and return the label URL for a shipment."""
 		url = f"{SHIPROCKET_API_BASE_URL}/courier/generate/label"
 		payload = {"shipment_id": [shipment_id]}
 		response_data = self.request_call(payload, "POST", url)
 		if response_data.get("label_created"):
-			return response_data.get("label_url")
-		return {}
+			label_url = response_data.get("label_url")
+			if label_url:
+				return label_url
+		frappe.throw(_("Failed to generate shipping label for Shiprocket shipment {0}").format(shipment_id))
 
 	def get_tracking_data(self, shipment_id: str) -> dict:
 		url = f"{SHIPROCKET_API_BASE_URL}/courier/track/shipment/{shipment_id}"
