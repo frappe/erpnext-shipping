@@ -9,14 +9,23 @@ from frappe import _
 from frappe.model.document import Document
 from requests.exceptions import HTTPError
 
-from erpnext_shipping.erpnext_shipping.doctype.delhiveryone.constants import DELHIVERY_API_BASE_URL
+from erpnext_shipping.erpnext_shipping.doctype.delhiveryone.constants import (
+	DELHIVERY_API_BASE_URL,
+	DELHIVERY_CREATE_SHIPMENT_ENDPOINT,
+	DELHIVERY_PACKING_SLIP_ENDPOINT,
+	DELHIVERY_PINCODE_CHECK_ENDPOINT,
+	DELHIVERY_PROVIDER,
+	DELHIVERY_RATE_CALCULATOR_ENDPOINT,
+	DELHIVERY_STATUS_MAPPING,
+	DELHIVERY_TRACKING_ENDPOINT,
+)
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_enabled_doc_for_company,
 	handle_shipping_error,
 	validate_enabled_service,
 )
 
-DELHIVERY_PROVIDER = "Delhiveryone"
+REQUEST_TIMEOUT = 30
 
 
 class Delhiveryone(Document):
@@ -32,19 +41,31 @@ class Delhiveryone(Document):
 class DelhiveryOneUtils:
 	def __init__(self, company: str):
 		settings = get_enabled_doc_for_company(DELHIVERY_PROVIDER, company)
+		if not settings:
+			frappe.throw(
+				_("No enabled Delhivery account found for company {0}.").format(frappe.bold(company)),
+				title=_("Delhivery not configured"),
+			)
 		self.company = settings.get("company")
 		self.api_key = settings.get_password("api_key")
 		self.enable = settings.get("enabled")
 		self.name = settings.get("name")
 
+	def get_common_headers(self) -> dict:
+		return {
+			"Content-Type": "application/json",
+			"Authorization": f"Token {self.api_key}",
+		}
+
 	def _make_request(
 		self, method: str, endpoint: str, params=None, data=None, raise_exception: bool = True
 	) -> dict:
 		url = f"{DELHIVERY_API_BASE_URL}{endpoint}"
-		headers = {"Content-Type": "application/json", "Authorization": f"Token {self.api_key}"}
-
+		headers = self.get_common_headers()
 		try:
-			response = requests.request(method, url, headers=headers, params=params, data=data)
+			response = requests.request(
+				method, url, headers=headers, params=params, data=data, timeout=REQUEST_TIMEOUT
+			)
 			response.raise_for_status()
 			return response.json()
 		except HTTPError as http_err:
@@ -66,12 +87,18 @@ class DelhiveryOneUtils:
 		return {}
 
 	def get_availability(self, pickup_code: str) -> bool:
-		params = {"token": self.api_key, "filter_codes": pickup_code}
-		response = self._make_request("GET", "/c/api/pin-codes/json/", params=params, raise_exception=False)
-		return bool(response.get("delivery_codes"))
+		params = {"filter_codes": pickup_code}
+		response = self._make_request(
+			"GET", DELHIVERY_PINCODE_CHECK_ENDPOINT, params=params, raise_exception=False
+		)
+		delivery_codes = response.get("delivery_codes", [])
+		return bool(delivery_codes)
 
 	def get_available_services(self, delivery_address, pickup_address, weight):
 		if not self.enable or not self.api_key:
+			return []
+
+		if not pickup_address.pincode or not delivery_address.pincode:
 			return []
 
 		if not self.get_availability(pickup_address.pincode):
@@ -84,14 +111,15 @@ class DelhiveryOneUtils:
 				"ss": "Delivered",
 				"d_pin": delivery_address.pincode,
 				"o_pin": pickup_address.pincode,
-				"cgm": int(weight) * 1000,
+				"cgm": int(float(weight) * 1000),
 			}
 			response = self._make_request(
-				"GET", "/api/kinko/v1/invoice/charges/.json", params=params, raise_exception=False
+				"GET", DELHIVERY_RATE_CALCULATOR_ENDPOINT, params=params, raise_exception=False
 			)
-			services.append({mode: response})
+			if response:
+				services.append({mode: response})
 
-		return [self.get_service_dict(service) for service in services]
+		return [service for service in (self.get_service_dict(item) for item in services) if service]
 
 	def create_shipment(self, **kwargs):
 		pickup_phone = frappe.db.get_value("Address", kwargs["pickup_address_name"], "phone")
@@ -110,6 +138,7 @@ class DelhiveryOneUtils:
 
 		payload = {
 			"data": {
+				"client": self.name,
 				"pickup_location": {
 					"add": kwargs["pickup_address"].address_title,
 					"country": kwargs["pickup_address"].country_code.upper(),
@@ -123,13 +152,13 @@ class DelhiveryOneUtils:
 		}
 		json_data = json.dumps(payload["data"])
 		formatted_payload = f"format=json&data={json_data}"
-		response = self._make_request("POST", "/api/cmu/create.json", data=formatted_payload)
+		response = self._make_request("POST", DELHIVERY_CREATE_SHIPMENT_ENDPOINT, data=formatted_payload)
 		if response and response.get("success"):
 			awb_numbers = [pkg["waybill"] for pkg in response.get("packages", [])]
 			return {
-				"service_provider": "Delhiveryone",
+				"service_provider": DELHIVERY_PROVIDER,
 				"shipment_id": ", ".join(awb_numbers),
-				"carrier": "Delhiveryone",
+				"carrier": DELHIVERY_PROVIDER,
 				"carrier_service": kwargs["service_info"].get("service_name"),
 				"shipment_amount": response.get("cod_amount", 0),
 				"awb_number": ", ".join(awb_numbers),
@@ -142,7 +171,7 @@ class DelhiveryOneUtils:
 		label_urls = []
 		for ship_id in shipment_ids:
 			params = {"wbns": ship_id, "pdf": "true"}
-			response = self._make_request("GET", "/api/p/packing_slip", params=params)
+			response = self._make_request("GET", DELHIVERY_PACKING_SLIP_ENDPOINT, params=params)
 			if response and response.get("packages"):
 				label_urls.append(response["packages"][0]["pdf_download_link"])
 		return label_urls
@@ -151,13 +180,14 @@ class DelhiveryOneUtils:
 		shipment_ids = shipment_id.split(", ")
 		awb_numbers, tracking_statuses, tracking_info = [], [], []
 		for ship_id in shipment_ids:
-			params = {"token": self.api_key, "waybill": ship_id}
-			response = self._make_request("GET", "/api/v1/packages/json", params=params)
-			if response.get("ShipmentData"):
+			endpoint = DELHIVERY_TRACKING_ENDPOINT.format(package_id=ship_id)
+			response = self._make_request("GET", endpoint, raise_exception=False)
+			if response and response.get("ShipmentData"):
 				shipment = response["ShipmentData"][0]["Shipment"]
 				awb_numbers.append(shipment.get("AWB", "N/A"))
-				tracking_statuses.append(shipment["Status"]["Status"])
-				tracking_info.append(shipment["Status"]["Instructions"])
+				status = shipment.get("Status", {}).get("Status", "")
+				tracking_statuses.append(DELHIVERY_STATUS_MAPPING.get(status, "In Progress"))
+				tracking_info.append(shipment.get("Status", {}).get("Instructions", ""))
 		return {
 			"awb_number": ", ".join(awb_numbers),
 			"tracking_status": ", ".join(tracking_statuses),
@@ -166,11 +196,16 @@ class DelhiveryOneUtils:
 		}
 
 	def get_service_dict(self, service):
+		if not service:
+			return None
 		service_type = next(iter(service))
-		service_details = service[service_type][0]
+		service_list = service.get(service_type, [])
+		if not service_list:
+			return None
+		service_details = service_list[0]
 		return frappe._dict(
-			service_provider="Delhiveryone",
-			carrier="Delhiveryone",
+			service_provider=DELHIVERY_PROVIDER,
+			carrier=DELHIVERY_PROVIDER,
 			service_name="Surface" if service_type == "S" else "Express",
 			total_price=service_details.get("total_amount", 0.0),
 			currency="INR",
@@ -186,9 +221,18 @@ class DelhiveryOneUtils:
 		delivery_contact,
 		service_info,
 	):
+		name = " ".join(
+			filter(
+				None,
+				[
+					delivery_contact.first_name,
+					delivery_contact.last_name,
+				],
+			)
+		).strip()
 		return {
-			"name": f"{delivery_contact.first_name} {delivery_contact.last_name}",
-			"country": delivery_address.country,
+			"name": name,
+			"country": delivery_address.country_code.upper(),
 			"city": delivery_address.city,
 			"add": delivery_address.address_line1,
 			"pin": delivery_address.pincode,
