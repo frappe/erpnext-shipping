@@ -25,20 +25,20 @@ from erpnext_shipping.erpnext_shipping.utils import (
 
 @frappe.whitelist()
 def fetch_shipping_rates(
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	parcels,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
-	pickup_company=None,
-	total_weight=None,
-	pickup_contact=None,
-	delivery_contact=None,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	parcels: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: float,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	pickup_company: str | None = None,
+	total_weight: float | None = None,
+	pickup_contact: str | None = None,
+	delivery_contact: str | None = None,
 ):
 	if not frappe.has_permission("Shipment", "write"):
 		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
@@ -125,23 +125,23 @@ def fetch_shipping_rates(
 
 @frappe.whitelist()
 def create_shipment(
-	shipment,
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	shipment_parcel,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	service_data,
-	total_weight,
-	shipment_notific_email=None,
-	tracking_notific_email=None,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
-	delivery_notes=None,
-	pickup_company=None,
+	shipment: str,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	shipment_parcel: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: float,
+	service_data: str,
+	total_weight: float,
+	shipment_notific_email: str | None = None,
+	tracking_notific_email: str | None = None,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	delivery_notes: str | list | None = None,
+	pickup_company: str | None = None,
 ):
 	if not frappe.has_permission("Shipment", "write"):
 		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
@@ -282,7 +282,13 @@ def print_shipping_label(shipment: str):
 
 
 @frappe.whitelist()
-def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None, awb_number=None):
+def update_tracking(
+	shipment: str,
+	service_provider: str,
+	shipment_id: str,
+	delivery_notes: str | list | None = None,
+	awb_number: str | None = None,
+):
 	if not frappe.has_permission("Shipment", "write"):
 		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
 
