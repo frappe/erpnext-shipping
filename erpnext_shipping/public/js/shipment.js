@@ -11,11 +11,11 @@ frappe.ui.form.on("Shipment", {
 							"If your shipment contains packages with varying weights, the estimated shipping rates may differ from the final price charged by your carrier. Do you wish to proceed?",
 						),
 						function () {
-							frm.events.fetch_shipping_rates(frm);
+							frm.trigger("fetch_shipping_rates");
 						},
 					);
 				} else {
-					frm.events.fetch_shipping_rates(frm);
+					frm.trigger("fetch_shipping_rates");
 				}
 			});
 		}
@@ -23,7 +23,7 @@ frappe.ui.form.on("Shipment", {
 			frm.add_custom_button(
 				__("Print Shipping Label"),
 				function () {
-					return frm.events.print_shipping_label(frm);
+					return frm.trigger("print_shipping_label");
 				},
 				__("Tools"),
 			);
@@ -31,7 +31,7 @@ frappe.ui.form.on("Shipment", {
 				frm.add_custom_button(
 					__("Update Tracking"),
 					function () {
-						return frm.events.update_tracking(frm, frm.doc.service_provider, frm.doc.shipment_id);
+						return frm.trigger("update_tracking", frm.doc.service_provider, frm.doc.shipment_id);
 					},
 					__("Tools"),
 				);
@@ -219,7 +219,7 @@ function select_from_available_services(frm, available_services) {
 						title: __("Shipment Created"),
 						indicator: "green",
 					});
-					frm.events.update_tracking(frm, r.message.service_provider, r.message.shipment_id);
+					frm.trigger("update_tracking", r.message.service_provider, r.message.shipment_id);
 				}
 			},
 		});
