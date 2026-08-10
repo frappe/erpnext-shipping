@@ -31,7 +31,7 @@ frappe.ui.form.on("Shipment", {
 				frm.add_custom_button(
 					__("Update Tracking"),
 					function () {
-						return frm.trigger("update_tracking", frm.doc.service_provider, frm.doc.shipment_id);
+						return frm.events.update_tracking(frm, frm.doc.service_provider, frm.doc.shipment_id);
 					},
 					__("Tools"),
 				);
@@ -219,7 +219,7 @@ function select_from_available_services(frm, available_services) {
 						title: __("Shipment Created"),
 						indicator: "green",
 					});
-					frm.trigger("update_tracking", r.message.service_provider, r.message.shipment_id);
+					frm.events.update_tracking(frm, r.message.service_provider, r.message.shipment_id);
 				}
 			},
 		});
