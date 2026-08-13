@@ -145,6 +145,10 @@ frappe.ui.form.on("Shipment", {
 });
 
 function select_from_available_services(frm, available_services) {
+	frappe.require("shipping.bundle.js", () => show_service_selector(frm, available_services));
+}
+
+function show_service_selector(frm, available_services) {
 	const arranged_services = available_services.reduce(
 		(prev, curr) => {
 			if (curr.is_preferred) {
