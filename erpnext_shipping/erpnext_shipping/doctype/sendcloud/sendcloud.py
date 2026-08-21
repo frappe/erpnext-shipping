@@ -341,7 +341,7 @@ class SendCloudUtils:
 		available_service = frappe._dict()
 		available_service.service_provider = "SendCloud"
 		available_service.carrier = service["carrier"]["name"]
-		available_service.service_name = service["product"]["name"]
+		available_service.service_name = service["name"]
 		available_service.service_id = service["code"]
 		available_service.multicollo = service["functionalities"].get("multicollo", False)
 
