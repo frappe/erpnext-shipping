@@ -4,7 +4,10 @@ import json
 
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
+from frappe import _
 
+from erpnext_shipping.erpnext_shipping.doctype.envia.constants import ENVIA_PROVIDER
+from erpnext_shipping.erpnext_shipping.doctype.envia.envia import EnviaUtils
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
 	get_letmeship_utils,
@@ -13,27 +16,38 @@ from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SENDCL
 from erpnext_shipping.erpnext_shipping.utils import (
 	get_address,
 	get_contact,
+	get_enabled_doc_for_company,
+	get_shipping_label,
 	match_parcel_service_type_carrier,
+	save_label_as_attachment,
 )
 
 
 @frappe.whitelist()
 def fetch_shipping_rates(
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	parcels,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	parcels: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: float,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	pickup_company: str | None = None,
+	total_weight: float | None = None,
+	pickup_contact: str | None = None,
+	delivery_contact: str | None = None,
 ):
+	if not frappe.has_permission("Shipment", "write"):
+		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
+
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
 	letmeship_enabled = frappe.db.get_single_value("LetMeShip", "enabled")
 	sendcloud_enabled = frappe.db.get_single_value("SendCloud", "enabled")
+	envia_enabled = get_enabled_doc_for_company(ENVIA_PROVIDER, pickup_company)
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
@@ -78,6 +92,32 @@ def fetch_shipping_rates(
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
 
+	if envia_enabled:
+		if pickup_from_type != "Company":
+			envia_pickup_contact = get_contact(pickup_contact_name)
+		else:
+			envia_pickup_contact = get_company_contact(user=pickup_contact_name)
+			envia_pickup_contact.email_id = envia_pickup_contact.pop("email", None)
+
+		envia_delivery_contact = get_contact(delivery_contact_name)
+
+		envia = EnviaUtils(company=pickup_company)
+		envia_prices = (
+			envia.get_available_services(
+				delivery_address=delivery_address,
+				pickup_address=pickup_address,
+				parcels=parcels,
+				delivery_contact=envia_delivery_contact,
+				pickup_contact=envia_pickup_contact,
+				total_weight=total_weight,
+				value_of_goods=value_of_goods,
+				pickup_company=pickup_company,
+				description_of_content=description_of_content,
+			)
+			or []
+		)
+		envia_prices = match_parcel_service_type_carrier(envia_prices, "carrier", "service_name")
+		shipment_prices += envia_prices
 	shipment_prices = [item for item in shipment_prices if "total_price" in item]
 	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
@@ -85,24 +125,33 @@ def fetch_shipping_rates(
 
 @frappe.whitelist()
 def create_shipment(
-	shipment,
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	shipment_parcel,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	service_data,
-	shipment_notific_email=None,
-	tracking_notific_email=None,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
-	delivery_notes=None,
+	shipment: str,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	shipment_parcel: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: float,
+	service_data: str,
+	total_weight: float,
+	shipment_notific_email: str | None = None,
+	tracking_notific_email: str | None = None,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	delivery_notes: str | list | None = None,
+	pickup_company: str | None = None,
 ):
+	if not frappe.has_permission("Shipment", "write"):
+		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
+
+	# SECURITY CHECK: Load the true shipment document to prevent cross-company credential misuse
+	shipment_doc = frappe.get_doc("Shipment", shipment)
+	# Override the client-provided pickup_company with the authoritative DB value
+	pickup_company = shipment_doc.pickup_company
 
 	if delivery_notes is None:
 		delivery_notes = []
@@ -149,9 +198,26 @@ def create_shipment(
 			service_info=service_info,
 		)
 
+	if service_info["service_provider"] == ENVIA_PROVIDER:
+		envia = EnviaUtils(company=pickup_company)
+		shipment_info = envia.create_shipment(
+			pickup_address=pickup_address,
+			delivery_company_name=delivery_company_name,
+			delivery_address=delivery_address,
+			shipment_parcel=shipment_parcel,
+			description_of_content=description_of_content,
+			pickup_date=pickup_date,
+			value_of_goods=value_of_goods,
+			pickup_contact=pickup_contact,
+			delivery_contact=delivery_contact,
+			service_info=service_info,
+			total_weight=total_weight,
+			shipment=shipment,
+			pickup_company=pickup_company,
+		)
+
 	if shipment_info:
-		shipment = frappe.get_doc("Shipment", shipment)
-		shipment.db_set(
+		shipment_doc.db_set(
 			{
 				"service_provider": shipment_info.get("service_provider"),
 				"carrier": shipment_info.get("carrier"),
@@ -170,7 +236,9 @@ def create_shipment(
 
 
 def get_delivery_company_name(shipment: str) -> str | None:
-	shipment_doc = frappe.get_doc("Shipment", shipment)
+	shipment_doc = frappe.db.get_value(
+		"Shipment", shipment, ["delivery_customer", "delivery_supplier", "delivery_company"], as_dict=True
+	)
 	if shipment_doc.delivery_customer:
 		return frappe.db.get_value("Customer", shipment_doc.delivery_customer, "customer_name")
 	if shipment_doc.delivery_supplier:
@@ -183,9 +251,15 @@ def get_delivery_company_name(shipment: str) -> str | None:
 
 @frappe.whitelist()
 def print_shipping_label(shipment: str):
-	shipment_doc = frappe.get_doc("Shipment", shipment)
+	if not frappe.has_permission("Shipment", "read"):
+		frappe.throw(_("You do not have permission to access Shipment."), frappe.PermissionError)
+
+	shipment_doc = frappe.db.get_value(
+		"Shipment", shipment, ["service_provider", "shipment_id"], as_dict=True
+	)
 	service_provider = shipment_doc.service_provider
 	shipment_id = shipment_doc.shipment_id
+	shipping_label = None
 
 	if service_provider == LETMESHIP_PROVIDER:
 		letmeship = get_letmeship_utils()
@@ -196,35 +270,36 @@ def print_shipping_label(shipment: str):
 		_labels = sendcloud.get_label(shipment_id)
 		for i, label_url in enumerate(_labels, start=1):
 			content = sendcloud.download_label(label_url)
-			file_url = save_label_as_attachment(shipment, content, i)
+			file_url = save_label_as_attachment(shipment=shipment, content=content, index=i)
 			shipping_label.append(file_url)
-
+	elif service_provider == ENVIA_PROVIDER:
+		shipping_label = []
+		file_url = get_shipping_label(shipment)
+		if not file_url:
+			frappe.throw(_("Failed to generate label."))
+		shipping_label.append(file_url)
 	return shipping_label
 
 
-def save_label_as_attachment(shipment: str, content: bytes, index: int = None) -> str:
-	"""Store label as attachment to Shipment and return the URL."""
-	attachment = frappe.new_doc("File")
-	if index is not None:
-		attachment.file_name = f"label_{shipment}_{index}.pdf"
-	else:
-		attachment.file_name = f"label_{shipment}.pdf"
-	attachment.content = content
-	attachment.folder = "Home/Attachments"
-	attachment.attached_to_doctype = "Shipment"
-	attachment.attached_to_name = shipment
-	attachment.is_private = 1
-	attachment.save()
-	return attachment.file_url
-
-
 @frappe.whitelist()
-def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None):
+def update_tracking(
+	shipment: str,
+	service_provider: str,
+	shipment_id: str,
+	delivery_notes: str | list | None = None,
+	awb_number: str | None = None,
+):
+	if not frappe.has_permission("Shipment", "write"):
+		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
+
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
 	if delivery_notes is None:
 		delivery_notes = []
+
+	shipment = frappe.get_doc("Shipment", shipment)
+	pickup_company = shipment.pickup_company
 
 	# Update Tracking info in Shipment
 	tracking_data = None
@@ -234,11 +309,13 @@ def update_tracking(shipment, service_provider, shipment_id, delivery_notes=None
 	elif service_provider == SENDCLOUD_PROVIDER:
 		sendcloud = SendCloudUtils()
 		tracking_data = sendcloud.get_tracking_data(shipment_id)
+	elif service_provider == ENVIA_PROVIDER and shipment.awb_number:
+		envia = EnviaUtils(company=pickup_company)
+		tracking_data = envia.get_tracking_data(shipment.awb_number)
 
 	if not tracking_data:
 		return
 
-	shipment = frappe.get_doc("Shipment", shipment)
 	shipment.db_set(
 		{
 			"awb_number": tracking_data.get("awb_number"),
@@ -258,13 +335,25 @@ def update_delivery_note(delivery_notes, shipment_info=None, tracking_info=None)
 	delivery_notes = list(set(delivery_notes))
 
 	for delivery_note in delivery_notes:
-		dl_doc = frappe.get_doc("Delivery Note", delivery_note)
 		if shipment_info:
-			dl_doc.db_set("delivery_type", "Parcel Service")
-			dl_doc.db_set("parcel_service", shipment_info.get("carrier"))
-			dl_doc.db_set("parcel_service_type", shipment_info.get("carrier_service"))
+			frappe.db.set_value(
+				"Delivery Note",
+				delivery_note,
+				{
+					"delivery_type": "Parcel Service",
+					"parcel_service": shipment_info.get("carrier"),
+					"parcel_service_type": shipment_info.get("carrier_service"),
+				},
+			)
+
 		if tracking_info:
-			dl_doc.db_set("tracking_number", tracking_info.get("awb_number"))
-			dl_doc.db_set("tracking_url", tracking_info.get("tracking_url"))
-			dl_doc.db_set("tracking_status", tracking_info.get("tracking_status"))
-			dl_doc.db_set("tracking_status_info", tracking_info.get("tracking_status_info"))
+			frappe.db.set_value(
+				"Delivery Note",
+				delivery_note,
+				{
+					"tracking_number": tracking_info.get("awb_number"),
+					"tracking_url": tracking_info.get("tracking_url"),
+					"tracking_status": tracking_info.get("tracking_status"),
+					"tracking_status_info": tracking_info.get("tracking_status_info"),
+				},
+			)

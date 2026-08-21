@@ -125,6 +125,7 @@ scheduler_events = {"daily": ["erpnext_shipping.erpnext_shipping.utils.update_tr
 doc_events = {
 	"Shipment": {
 		"validate": [
+			"erpnext_shipping.erpnext_shipping.utils.validate_parcels",
 			"erpnext_shipping.erpnext_shipping.utils.validate_phone",
 		]
 	},

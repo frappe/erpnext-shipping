@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{company}-{email}",
+ "creation": "2025-02-24 15:42:34.491726",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "email",
+  "api_key",
+  "column_break_zsic",
+  "enabled",
+  "sandbox",
+  "base_api_url",
+  "base_url_query",
+  "test_base_api_url",
+  "test_base_url_query"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "mandatory_depends_on": "eval:doc.enabled",
+   "options": "Company"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "mandatory_depends_on": "eval:doc.enabled",
+   "options": "Email"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API key",
+   "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "fieldname": "column_break_zsic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "sandbox",
+   "fieldtype": "Check",
+   "label": "Sandbox"
+  },
+  {
+   "fieldname": "base_api_url",
+   "fieldtype": "Data",
+   "label": "Base API URL",
+   "mandatory_depends_on": "eval: doc.enabled"
+  },
+  {
+   "depends_on": "eval: doc.sandbox",
+   "fieldname": "test_base_api_url",
+   "fieldtype": "Data",
+   "label": "Test Base API URL",
+   "mandatory_depends_on": "eval: doc.sandbox"
+  },
+  {
+   "fieldname": "base_url_query",
+   "fieldtype": "Data",
+   "label": "Base URL Query",
+   "mandatory_depends_on": "eval: doc.enabled"
+  },
+  {
+   "depends_on": "eval: doc.sandbox",
+   "fieldname": "test_base_url_query",
+   "fieldtype": "Data",
+   "label": "Test Base URL Query",
+   "mandatory_depends_on": "eval: doc.sandbox"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-14 16:43:36.384375",
+ "modified_by": "Administrator",
+ "module": "ERPNext Shipping",
+ "name": "Envia",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
