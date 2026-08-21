@@ -223,8 +223,14 @@ class SendCloudUtils:
 		"""Returns a dictionary with service info."""
 		available_service = frappe._dict()
 		available_service.service_provider = "SendCloud"
+<<<<<<< HEAD
 		available_service.carrier = self.get_carrier(service["carrier"], post_or_get="get")
 		available_service.service_name = service["name"]
+=======
+		available_service.carrier = service["carrier"]["name"]
+		available_service.service_name = service["name"]
+		available_service.service_id = service["code"]
+>>>>>>> 6e0dc47 (fix(sendcloud): correct service name retrieval (WRT-7) (#112))
 
 		price = country["price"] or sum(price_part["value"] for price_part in country["price_breakdown"])
 		available_service.total_price = self.total_parcel_price(price, parcels)
