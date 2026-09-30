@@ -70,6 +70,7 @@ frappe.ui.form.on("Shipment", {
 					parcels: frm.doc.shipment_parcel,
 					description_of_content: frm.doc.description_of_content,
 					pickup_date: frm.doc.pickup_date,
+					pickup_company: frm.doc.pickup_company,
 					pickup_contact_name:
 						frm.doc.pickup_from_type === "Company"
 							? frm.doc.pickup_contact_person
@@ -203,6 +204,7 @@ function show_service_selector(frm, available_services) {
 				shipment_parcel: frm.doc.shipment_parcel,
 				description_of_content: frm.doc.description_of_content,
 				pickup_date: frm.doc.pickup_date,
+				pickup_company: frm.doc.pickup_company,
 				pickup_contact_name:
 					frm.doc.pickup_from_type === "Company"
 						? frm.doc.pickup_contact_person
