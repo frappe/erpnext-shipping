@@ -49,6 +49,10 @@ def fetch_shipping_rates(
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
 	parcels = json.loads(parcels)
+	if total_weight is None:
+		total_weight = sum(
+			float(parcel.get("weight") or 0) * int(parcel.get("count") or 1) for parcel in parcels
+		)
 
 	if letmeship_enabled:
 		pickup_contact = None
@@ -101,7 +105,8 @@ def fetch_shipping_rates(
 		delhivery_prices = match_parcel_service_type_carrier(delhivery_prices, "carrier", "service_name")
 		shipment_prices += delhivery_prices
 
-	shipment_prices = sorted(shipment_prices, key=lambda k: k.get("total_price", 0))
+	shipment_prices = [item for item in shipment_prices if "total_price" in item]
+	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
 	return shipment_prices
 
 
@@ -117,7 +122,7 @@ def create_shipment(
 	pickup_date: str,
 	value_of_goods: str,
 	service_data: str,
-	total_weight: float | None,
+	total_weight: float | None = None,
 	shipment_notific_email: str | None = None,
 	tracking_notific_email: str | None = None,
 	pickup_contact_name: str | None = None,
@@ -125,8 +130,11 @@ def create_shipment(
 	delivery_notes: str | None = None,
 	pickup_company: str | None = None,
 ) -> dict[str, Any] | None:
-	if not frappe.has_permission("Shipment", "write"):
+	if not frappe.has_permission("Shipment", "write", doc=shipment):
 		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
+
+	pickup_company = frappe.db.get_value("Shipment", shipment, "pickup_company")
+
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
@@ -230,7 +238,7 @@ def get_delivery_company_name(shipment: str) -> str | None:
 
 @frappe.whitelist()
 def print_shipping_label(shipment: str):
-	if not frappe.has_permission("Shipment", "read"):
+	if not frappe.has_permission("Shipment", "read", doc=shipment):
 		frappe.throw(_("You do not have permission to access Shipment."), frappe.PermissionError)
 	service_provider, shipment_id, pickup_company = frappe.db.get_value(
 		"Shipment",
@@ -265,15 +273,24 @@ def update_tracking(
 	delivery_notes: str | None = None,
 	awb_number: str | None = None,
 ) -> dict[str, Any] | None:
-	if not frappe.has_permission("Shipment", "write"):
-		frappe.throw(_("You do not have permission to modify Shipment."), frappe.PermissionError)
+	shipment = frappe.get_doc("Shipment", shipment)
+	shipment.check_permission("write")
+
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
 
 	if delivery_notes is None:
 		delivery_notes = []
 
-	shipment = frappe.get_doc("Shipment", shipment)
+	linked_delivery_notes = {row.delivery_note for row in shipment.shipment_delivery_note}
+	for delivery_note in delivery_notes:
+		if delivery_note not in linked_delivery_notes:
+			frappe.throw(
+				_("Delivery Note {0} is not linked to this Shipment.").format(delivery_note),
+				frappe.PermissionError,
+			)
+		frappe.get_doc("Delivery Note", delivery_note).check_permission("write")
+
 	pickup_company = shipment.pickup_company
 
 	# Update Tracking info in Shipment
@@ -310,29 +327,31 @@ def update_delivery_note(
 	tracking_info: dict[str, Any] | None = None,
 ):
 	# Update Shipment Info in Delivery Note
-	# Using db_set since some services might not exist
 	delivery_notes = list(dict.fromkeys(delivery_notes))
+	if not delivery_notes:
+		return
 
-	for delivery_note in delivery_notes:
-		if shipment_info:
-			frappe.db.set_value(
-				"Delivery Note",
-				delivery_note,
-				{
-					"delivery_type": "Parcel Service",
-					"parcel_service": shipment_info.get("carrier"),
-					"parcel_service_type": shipment_info.get("carrier_service"),
-				},
-			)
+	filters = {"name": ["in", delivery_notes]}
 
-		if tracking_info:
-			frappe.db.set_value(
-				"Delivery Note",
-				delivery_note,
-				{
-					"tracking_number": tracking_info.get("awb_number"),
-					"tracking_url": tracking_info.get("tracking_url"),
-					"tracking_status": tracking_info.get("tracking_status"),
-					"tracking_status_info": tracking_info.get("tracking_status_info"),
-				},
-			)
+	if shipment_info:
+		frappe.db.set_value(
+			"Delivery Note",
+			filters,
+			{
+				"delivery_type": "Parcel Service",
+				"parcel_service": shipment_info.get("carrier"),
+				"parcel_service_type": shipment_info.get("carrier_service"),
+			},
+		)
+
+	if tracking_info:
+		frappe.db.set_value(
+			"Delivery Note",
+			filters,
+			{
+				"tracking_number": tracking_info.get("awb_number"),
+				"tracking_url": tracking_info.get("tracking_url"),
+				"tracking_status": tracking_info.get("tracking_status"),
+				"tracking_status_info": tracking_info.get("tracking_status_info"),
+			},
+		)

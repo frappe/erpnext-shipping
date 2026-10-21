@@ -58,22 +58,31 @@ class DelhiveryOneUtils:
 		}
 
 	def _make_request(
-		self, method: str, endpoint: str, params=None, data=None, raise_exception: bool = True
+		self,
+		method: str,
+		endpoint: str,
+		params=None,
+		data=None,
+		raise_exception: bool = True,
+		headers: dict | None = None,
 	) -> dict:
 		url = f"{DELHIVERY_API_BASE_URL}{endpoint}"
-		headers = self.get_common_headers()
+		request_headers = self.get_common_headers()
+		if headers:
+			request_headers.update(headers)
 		try:
 			response = requests.request(
-				method, url, headers=headers, params=params, data=data, timeout=REQUEST_TIMEOUT
+				method, url, headers=request_headers, params=params, data=data, timeout=REQUEST_TIMEOUT
 			)
 			response.raise_for_status()
 			return response.json()
 		except HTTPError as http_err:
+			error_body = http_err.response.text if http_err.response is not None else ""
 			handle_shipping_error(
 				self.name,
 				DELHIVERY_PROVIDER,
 				f"HTTP error in {method} request to {endpoint}",
-				str(http_err),
+				f"{http_err}\n{error_body}".strip(),
 				raise_exception,
 			)
 		except Exception as err:
@@ -150,21 +159,47 @@ class DelhiveryOneUtils:
 				"shipments": shipments,
 			}
 		}
-		json_data = json.dumps(payload["data"])
-		formatted_payload = f"format=json&data={json_data}"
-		response = self._make_request("POST", DELHIVERY_CREATE_SHIPMENT_ENDPOINT, data=formatted_payload)
-		if response and response.get("success"):
-			awb_numbers = [pkg["waybill"] for pkg in response.get("packages", [])]
-			return {
-				"service_provider": DELHIVERY_PROVIDER,
-				"shipment_id": ", ".join(awb_numbers),
-				"carrier": DELHIVERY_PROVIDER,
-				"carrier_service": kwargs["service_info"].get("service_name"),
-				"shipment_amount": response.get("cod_amount", 0),
-				"awb_number": ", ".join(awb_numbers),
-			}
+		response = self._make_request(
+			"POST",
+			DELHIVERY_CREATE_SHIPMENT_ENDPOINT,
+			data={"format": "json", "data": json.dumps(payload["data"])},
+			headers={"Content-Type": "application/x-www-form-urlencoded"},
+		)
+		if not response or not response.get("success"):
+			frappe.throw(
+				_("Delhivery could not book the shipment: {0}").format(
+					self.get_error_message(response) or _("Unknown error")
+				),
+				title=_("Delhivery booking failed"),
+			)
 
-		return {}
+		awb_numbers = [pkg["waybill"] for pkg in response.get("packages", []) if pkg.get("waybill")]
+		if not awb_numbers:
+			frappe.throw(
+				_("Delhivery did not return any waybill number for this shipment."),
+				title=_("Delhivery booking failed"),
+			)
+
+		return {
+			"service_provider": DELHIVERY_PROVIDER,
+			"shipment_id": ", ".join(awb_numbers),
+			"carrier": DELHIVERY_PROVIDER,
+			"carrier_service": kwargs["service_info"].get("service_name"),
+			"shipment_amount": kwargs["service_info"].get("total_price", 0),
+			"awb_number": ", ".join(awb_numbers),
+		}
+
+	@staticmethod
+	def get_error_message(response: dict | None) -> str:
+		if not response:
+			return ""
+		messages = []
+		if response.get("rmk"):
+			messages.append(str(response["rmk"]))
+		for pkg in response.get("packages", []) or []:
+			for remark in pkg.get("remarks", []) or []:
+				messages.append(str(remark))
+		return "; ".join(messages)
 
 	def get_label(self, shipment_id):
 		shipment_ids = shipment_id.split(", ")
@@ -180,18 +215,36 @@ class DelhiveryOneUtils:
 		shipment_ids = shipment_id.split(", ")
 		awb_numbers, tracking_statuses, tracking_info = [], [], []
 		for ship_id in shipment_ids:
-			endpoint = DELHIVERY_TRACKING_ENDPOINT.format(package_id=ship_id)
-			response = self._make_request("GET", endpoint, raise_exception=False)
+			response = self._make_request(
+				"GET",
+				DELHIVERY_TRACKING_ENDPOINT,
+				params={"waybill": ship_id},
+				raise_exception=False,
+			)
 			if response and response.get("ShipmentData"):
 				shipment = response["ShipmentData"][0]["Shipment"]
-				awb_numbers.append(shipment.get("AWB", "N/A"))
+				awb = shipment.get("AWB", ship_id)
 				status = shipment.get("Status", {}).get("Status", "")
-				tracking_statuses.append(DELHIVERY_STATUS_MAPPING.get(status, "In Progress"))
-				tracking_info.append(shipment.get("Status", {}).get("Instructions", ""))
+				mapped_status = DELHIVERY_STATUS_MAPPING.get(status, "In Progress")
+				instructions = shipment.get("Status", {}).get("Instructions", "")
+
+				awb_numbers.append(awb)
+				tracking_statuses.append(mapped_status)
+				tracking_info.append(
+					f"{awb}: {mapped_status}" + (f" - {instructions}" if instructions else "")
+				)
+
+		if not awb_numbers:
+			return {}
+
+		# One overall status: shared status if all parcels match, otherwise still in progress
+		unique_statuses = set(tracking_statuses)
+		overall_status = unique_statuses.pop() if len(unique_statuses) == 1 else "In Progress"
+
 		return {
 			"awb_number": ", ".join(awb_numbers),
-			"tracking_status": ", ".join(tracking_statuses),
-			"tracking_status_info": ", ".join(tracking_info),
+			"tracking_status": overall_status,
+			"tracking_status_info": "; ".join(tracking_info),
 			"tracking_url": "",
 		}
 
@@ -222,13 +275,7 @@ class DelhiveryOneUtils:
 		service_info,
 	):
 		name = " ".join(
-			filter(
-				None,
-				[
-					delivery_contact.first_name,
-					delivery_contact.last_name,
-				],
-			)
+			part for part in [delivery_contact.first_name, delivery_contact.last_name] if part
 		).strip()
 		return {
 			"name": name,

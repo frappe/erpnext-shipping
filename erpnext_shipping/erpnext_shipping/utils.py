@@ -136,18 +136,19 @@ def update_tracking_info_daily():
 	"""
 	from erpnext_shipping.erpnext_shipping.shipping import update_tracking
 
-	try:
-		shipments = frappe.get_all(
-			"Shipment",
-			filters={
-				"docstatus": 1,
-				"status": "Booked",
-				"shipment_id": ["!=", ""],
-				"tracking_status": ["!=", "Delivered"],
-			},
-			fields=["name", "service_provider", "shipment_id", "awb_number"],
-		)
-		for shipment in shipments:
+	shipments = frappe.get_all(
+		"Shipment",
+		filters={
+			"docstatus": 1,
+			"status": "Booked",
+			"shipment_id": ["!=", ""],
+			"tracking_status": ["!=", "Delivered"],
+		},
+		fields=["name", "service_provider", "shipment_id", "awb_number"],
+	)
+
+	for shipment in shipments:
+		try:
 			delivery_notes = frappe.get_all(
 				"Shipment Delivery Note",
 				filters={"parent": shipment.name},
@@ -172,11 +173,11 @@ def update_tracking_info_daily():
 						"tracking_url": tracking_info.get("tracking_url"),
 					},
 				)
-	except Exception:
-		frappe.log_error(
-			title="Shipment Tracking Update Failed",
-			message=frappe.get_traceback(),
-		)
+		except Exception:
+			frappe.log_error(
+				title=f"Shipment Tracking Update Failed: {shipment.name}",
+				message=frappe.get_traceback(),
+			)
 
 
 def get_enabled_doc_for_company(doctype: str, company: str) -> dict | None:
