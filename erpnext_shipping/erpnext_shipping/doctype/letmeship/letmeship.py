@@ -12,7 +12,7 @@ from frappe.model.document import Document
 from frappe.utils.data import cint, flt, get_link_to_form
 from requests.exceptions import HTTPError
 
-from erpnext_shipping.erpnext_shipping.utils import show_error_alert
+from erpnext_shipping.erpnext_shipping.utils import CHECKOUT_TIMEOUT, show_error_alert
 
 LETMESHIP_PROVIDER = "LetMeShip"
 PROD_BASE_URL = "https://api.letmeship.com/v1"
@@ -49,7 +49,14 @@ class LetMeShipUtils:
 		self.api_password = api_password
 		self.api_id = api_id
 
-	def request(self, method: str, endpoint: str, json: dict | None = None, params: dict | None = None):
+	def request(
+		self,
+		method: str,
+		endpoint: str,
+		json: dict | None = None,
+		params: dict | None = None,
+		timeout: float | None = None,
+	):
 		"""Make a request to LetMeShip API."""
 		response = requests.request(
 			method,
@@ -62,6 +69,7 @@ class LetMeShipUtils:
 			},
 			params=params,
 			json=json,
+			timeout=timeout,
 		)
 
 		response.raise_for_status()
@@ -87,7 +95,10 @@ class LetMeShipUtils:
 		value_of_goods,
 		pickup_contact=None,
 		delivery_contact=None,
+		checkout: bool = False,
 	):
+		"""LetMeShip's services for the parcels. At store checkout (checkout=True) a failed quote
+		raises after a short timeout instead of showing an alert."""
 		if not self.validate_parcels(parcels):
 			frappe.msgprint(
 				_("LetMeShip rates need parcel dimensions (length, width, height)."),
@@ -112,7 +123,9 @@ class LetMeShipUtils:
 		)
 
 		try:
-			response_data = self.request("POST", "available", json=payload)
+			response_data = self.request(
+				"POST", "available", json=payload, timeout=CHECKOUT_TIMEOUT if checkout else None
+			)
 			if "serviceList" in response_data and response_data["serviceList"]:
 				available_services = []
 				for response in response_data["serviceList"]:
@@ -121,6 +134,8 @@ class LetMeShipUtils:
 
 				return available_services
 		except Exception:
+			if checkout:
+				raise
 			show_error_alert("fetching LetMeShip prices")
 
 		return []

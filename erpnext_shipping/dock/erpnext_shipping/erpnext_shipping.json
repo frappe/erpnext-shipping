@@ -1,0 +1,20 @@
+{
+ "app": "erpnext_shipping",
+ "docstatus": 0,
+ "doctype": "Dock",
+ "idx": 0,
+ "mount_on": "erpnext",
+ "items": [
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "truck",
+   "link_to": "Shipping",
+   "link_type": "Sidebar",
+   "title": "Shipping"
+  }
+ ],
+ "name": "erpnext_shipping",
+ "standard": 1,
+ "user": ""
+}

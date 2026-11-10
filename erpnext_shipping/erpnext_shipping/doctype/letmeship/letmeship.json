@@ -8,7 +8,11 @@
   "enabled",
   "use_test_environment",
   "api_id",
-  "api_password"
+  "api_password",
+  "store_section",
+  "shop_checkout_rates",
+  "rates_include_tax",
+  "checkout_services"
  ],
  "fields": [
   {
@@ -34,11 +38,39 @@
    "fieldname": "use_test_environment",
    "fieldtype": "Check",
    "label": "Use Test Environment"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "store_section",
+   "fieldtype": "Section Break",
+   "label": "Online Store"
+  },
+  {
+   "default": "0",
+   "description": "Offer LetMeShip rates to shoppers at checkout (Shop app)",
+   "fieldname": "shop_checkout_rates",
+   "fieldtype": "Check",
+   "label": "Rates at Store Checkout"
+  },
+  {
+   "default": "0",
+   "depends_on": "shop_checkout_rates",
+   "description": "Tick if the rates LetMeShip gives include tax (e.g. GST or VAT)",
+   "fieldname": "rates_include_tax",
+   "fieldtype": "Check",
+   "label": "Rates Include Tax"
+  },
+  {
+   "depends_on": "shop_checkout_rates",
+   "description": "Service codes to offer, one per line. Empty offers every service",
+   "fieldname": "checkout_services",
+   "fieldtype": "Small Text",
+   "label": "Services at Checkout"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-07-07 01:19:23.385682",
+ "modified": "2026-11-09 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "LetMeShip",

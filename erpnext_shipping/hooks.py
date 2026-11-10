@@ -124,8 +124,21 @@ scheduler_events = {"daily": ["erpnext_shipping.erpnext_shipping.utils.update_tr
 
 doc_events = {
 	"Shipment": {
+		"before_validate": [
+			"erpnext_shipping.erpnext_shipping.utils.fill_parcels_from_items",
+		],
 		"validate": [
 			"erpnext_shipping.erpnext_shipping.utils.validate_phone",
-		]
+		],
+		"on_cancel": [
+			"erpnext_shipping.erpnext_shipping.doctype.starshipit.starshipit.cancel_shipment_order",
+		],
 	},
+}
+
+# Shop app (online store): shipping rates at checkout, and store parcels as Shipments
+shop_shipping_rate_providers = ["erpnext_shipping.erpnext_shipping.shop_integration.checkout_rates"]
+shop_fulfillment_providers = {
+	"erpnext_shipping": "erpnext_shipping.erpnext_shipping.shop_integration.ShippingFulfillment",
+	"starshipit": "erpnext_shipping.erpnext_shipping.shop_integration.StarshipitFulfillment",
 }

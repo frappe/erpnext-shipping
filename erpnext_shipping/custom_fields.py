@@ -3,6 +3,81 @@ from .utils import identity as _
 
 def get_custom_fields():
 	return {
+		"Item": [
+			{
+				"fieldname": "shipping_parcel_template",
+				"label": _("Parcel Template"),
+				"fieldtype": "Link",
+				"options": "Shipment Parcel Template",
+				"description": _("Box this item ships in"),
+				"depends_on": "eval:doc.is_stock_item",
+				"insert_after": "weight_uom",
+			},
+			{
+				"fieldname": "ships_in_own_box",
+				"label": _("Ships in Own Box"),
+				"fieldtype": "Check",
+				"description": _("Never packed with other items"),
+				"depends_on": "eval:doc.is_stock_item",
+				"insert_after": "shipping_parcel_template",
+			},
+		],
+		"Shipment Parcel Template": [
+			{
+				"fieldname": "max_weight",
+				"label": _("Maximum Weight (kg)"),
+				"fieldtype": "Float",
+				"description": _(
+					"The most a box of this kind may weigh, the box included. Items that share boxes fill as many as they need. 0 for no limit"
+				),
+				"insert_after": "weight",
+			},
+		],
+		"Warehouse": [
+			{
+				"fieldname": "shipping_pickup_contact",
+				"label": _("Pickup Contact"),
+				"fieldtype": "Link",
+				"options": "User",
+				"description": _(
+					"Hands parcels from this warehouse to the courier, on Shipments created from store orders"
+				),
+				"insert_after": "mobile_no",
+			},
+		],
+		"Shipment": [
+			{
+				"fieldname": "preferred_service",
+				"label": _("Customer's Choice"),
+				"fieldtype": "Small Text",
+				"read_only": 1,
+				"hidden": 1,
+				"no_copy": 1,
+				"description": _("Shipping service the customer chose at checkout"),
+				"insert_after": "shipment_type",
+			},
+			{
+				"fieldname": "pickup_booked_for",
+				"label": _("Pickup Booked For"),
+				"fieldtype": "Date",
+				"read_only": 1,
+				"no_copy": 1,
+				"allow_on_submit": 1,
+				"depends_on": "eval:doc.pickup_booked_for",
+				"insert_after": "pickup_to",
+			},
+			{
+				"fieldname": "pickup_job_number",
+				"label": _("Pickup Job Number"),
+				"fieldtype": "Data",
+				"read_only": 1,
+				"no_copy": 1,
+				"allow_on_submit": 1,
+				"depends_on": "eval:doc.pickup_booked_for",
+				"description": _("The courier's job number, or pending while a booking got no answer"),
+				"insert_after": "pickup_booked_for",
+			},
+		],
 		"Delivery Note": [
 			{
 				"fieldname": "shipping_sec_break",
@@ -72,7 +147,7 @@ def get_custom_fields():
 				"translatable": 0,
 				"insert_after": "tracking_status",
 			},
-		]
+		],
 	}
 
 

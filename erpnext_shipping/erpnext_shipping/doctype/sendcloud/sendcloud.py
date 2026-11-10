@@ -12,7 +12,7 @@ from frappe.utils import flt
 from frappe.utils.data import get_link_to_form
 from requests.exceptions import HTTPError
 
-from erpnext_shipping.erpnext_shipping.utils import show_error_alert
+from erpnext_shipping.erpnext_shipping.utils import CHECKOUT_TIMEOUT, show_error_alert
 
 SENDCLOUD_PROVIDER = "SendCloud"
 WEIGHT_DECIMALS = 3
@@ -41,8 +41,11 @@ class SendCloudUtils:
 			link = get_link_to_form("SendCloud", "SendCloud", _("SendCloud Settings"))
 			frappe.throw(_("Please enable SendCloud Integration in {0}").format(link))
 
-	def get_available_services(self, delivery_address, pickup_address, parcels: list[dict]):
-		# Retrieve rates at SendCloud from specification stated.
+	def get_available_services(
+		self, delivery_address, pickup_address, parcels: list[dict], checkout: bool = False
+	):
+		"""SendCloud's services for the parcels. At store checkout (checkout=True) a failed quote
+		raises after a short timeout instead of showing an alert, and no options is an empty list."""
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
 
@@ -92,6 +95,7 @@ class SendCloudUtils:
 				json=payload,
 				auth=(self.api_key, self.api_secret),
 				headers={"Accept": "application/json", "Content-Type": "application/json"},
+				timeout=CHECKOUT_TIMEOUT if checkout else None,
 			)
 
 			response_data = response.json()
@@ -100,6 +104,8 @@ class SendCloudUtils:
 				frappe.throw(self.format_api_errors(errors), title=_("SendCloud"))
 
 			if "data" not in response_data or not response_data["data"]:
+				if checkout:
+					return []
 				frappe.throw(_("No shipping options found for this destination."), title=_("SendCloud"))
 
 			available_services = []
@@ -111,6 +117,8 @@ class SendCloudUtils:
 		except frappe.ValidationError:
 			raise
 		except Exception:
+			if checkout:
+				raise
 			show_error_alert("fetching SendCloud prices")
 
 	def create_shipment(

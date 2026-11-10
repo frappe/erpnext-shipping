@@ -7,7 +7,11 @@
  "field_order": [
   "enabled",
   "api_key",
-  "api_secret"
+  "api_secret",
+  "store_section",
+  "shop_checkout_rates",
+  "rates_include_tax",
+  "checkout_services"
  ],
  "fields": [
   {
@@ -27,12 +31,40 @@
    "fieldtype": "Password",
    "label": "API Secret",
    "mandatory_depends_on": "enabled"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "store_section",
+   "fieldtype": "Section Break",
+   "label": "Online Store"
+  },
+  {
+   "default": "0",
+   "description": "Offer SendCloud rates to shoppers at checkout (Shop app)",
+   "fieldname": "shop_checkout_rates",
+   "fieldtype": "Check",
+   "label": "Rates at Store Checkout"
+  },
+  {
+   "default": "0",
+   "depends_on": "shop_checkout_rates",
+   "description": "Tick if the rates SendCloud gives include tax (e.g. GST or VAT)",
+   "fieldname": "rates_include_tax",
+   "fieldtype": "Check",
+   "label": "Rates Include Tax"
+  },
+  {
+   "depends_on": "shop_checkout_rates",
+   "description": "Service codes to offer, one per line. Empty offers every service",
+   "fieldname": "checkout_services",
+   "fieldtype": "Small Text",
+   "label": "Services at Checkout"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-07 01:19:22.604264",
+ "modified": "2026-11-09 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "SendCloud",

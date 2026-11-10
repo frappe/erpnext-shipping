@@ -54,6 +54,9 @@ frappe.ui.form.on("Shipment", {
 				);
 			}
 		}
+		if (frm.doc.service_provider === "Starshipit" && frm.doc.shipment_id && frm.doc.docstatus === 1) {
+			add_starshipit_buttons(frm);
+		}
 	},
 
 	fetch_shipping_rates: function (frm) {
@@ -76,6 +79,7 @@ frappe.ui.form.on("Shipment", {
 							: frm.doc.pickup_contact_name,
 					delivery_contact_name: frm.doc.delivery_contact_name,
 					value_of_goods: frm.doc.value_of_goods,
+					shipment: frm.doc.name,
 				},
 				callback: function (r) {
 					if (r.message && r.message.length) {
@@ -229,5 +233,103 @@ function show_service_selector(frm, available_services) {
 		});
 		dialog.hide();
 	};
+	dialog.show();
+}
+
+const STARSHIPIT_METHOD = "erpnext_shipping.erpnext_shipping.doctype.starshipit.starshipit.";
+
+function add_starshipit_buttons(frm) {
+	frm.add_custom_button(
+		__("Manifest"),
+		() =>
+			frappe.confirm(__("Manifest this order? It is sent to the courier for billing."), () =>
+				frappe.call({
+					method: STARSHIPIT_METHOD + "manifest_shipment",
+					args: { shipment: frm.doc.name },
+					freeze: true,
+					freeze_message: __("Manifesting"),
+					callback: (r) => {
+						if (r.message) window.open(r.message);
+						frm.reload_doc();
+					},
+				}),
+			),
+		__("Starshipit"),
+	);
+	frm.add_custom_button(__("Book Pickup"), () => show_pickup_dialog(frm), __("Starshipit"));
+	frm.add_custom_button(
+		__("Commercial Invoice"),
+		() =>
+			frappe.call({
+				method: STARSHIPIT_METHOD + "create_commercial_invoice",
+				args: { shipment: frm.doc.name },
+				freeze: true,
+				freeze_message: __("Creating Commercial Invoice"),
+				callback: (r) => {
+					(r.message || []).forEach((url) => window.open(url));
+					frm.reload_doc();
+				},
+			}),
+		__("Starshipit"),
+	);
+}
+
+function show_pickup_dialog(frm) {
+	const dialog = new frappe.ui.Dialog({
+		title: __("Book Courier Pickup"),
+		fields: [
+			{
+				fieldname: "pickup_date",
+				fieldtype: "Date",
+				label: __("Pickup Date"),
+				reqd: 1,
+				default: frm.doc.pickup_date || frappe.datetime.get_today(),
+			},
+			{ fieldtype: "Column Break" },
+			{
+				fieldname: "pickup_from",
+				fieldtype: "Time",
+				label: __("Pickup From"),
+				reqd: 1,
+				default: frm.doc.pickup_from || "09:00:00",
+			},
+			{ fieldtype: "Column Break" },
+			{
+				fieldname: "pickup_to",
+				fieldtype: "Time",
+				label: __("Pickup To"),
+				reqd: 1,
+				default: frm.doc.pickup_to || "17:00:00",
+			},
+			{ fieldtype: "Section Break" },
+			{ fieldname: "special_instructions", fieldtype: "Small Text", label: __("Special Instructions") },
+		],
+		primary_action_label: __("Book Pickup"),
+		primary_action(values) {
+			const book = (book_again) =>
+				frappe.call({
+					method: STARSHIPIT_METHOD + "book_pickup",
+					args: { shipment: frm.doc.name, ...values, book_again },
+					freeze: true,
+					freeze_message: __("Booking Pickup"),
+					callback: (r) => {
+						const result = r.message || {};
+						if (result.confirm) {
+							frappe.confirm(result.confirm, () => book(1));
+							return;
+						}
+						dialog.hide();
+						frappe.msgprint({
+							title: __("Pickup Booked"),
+							message: __("Job number: {0}", [result.job_number || "-"]),
+							indicator: "green",
+						});
+						frm.reload_doc();
+					},
+					error: () => frm.reload_doc(),
+				});
+			book(0);
+		},
+	});
 	dialog.show();
 }

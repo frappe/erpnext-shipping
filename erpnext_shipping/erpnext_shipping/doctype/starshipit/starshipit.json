@@ -1,0 +1,225 @@
+{
+ "actions": [],
+ "creation": "2026-11-06 20:00:00",
+ "description": "Starshipit shipping integration: rates from every courier on your Starshipit account, orders, labels, tracking and cancellations.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "api_key",
+  "subscription_key",
+  "column_break_keys",
+  "default_parcel_template",
+  "signature_required",
+  "labels_section",
+  "allow_label_printing",
+  "pickup_time_zone",
+  "store_section",
+  "shop_checkout_rates",
+  "rates_include_tax",
+  "rates_currency",
+  "checkout_free_services",
+  "checkout_rate_percent",
+  "checkout_rate_fixed",
+  "checkout_services",
+  "column_break_store",
+  "sender_address",
+  "pickup_contact",
+  "content_description",
+  "webhook_section",
+  "webhook_url",
+  "webhook_secret",
+  "webhook_token"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "description": "From Starshipit: Settings > API",
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "mandatory_depends_on": "enabled"
+  },
+  {
+   "fieldname": "subscription_key",
+   "fieldtype": "Password",
+   "label": "Subscription Key",
+   "mandatory_depends_on": "enabled"
+  },
+  {
+   "fieldname": "column_break_keys",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Used for rates when a parcel has no size",
+   "fieldname": "default_parcel_template",
+   "fieldtype": "Link",
+   "label": "Default Parcel Template",
+   "options": "Shipment Parcel Template"
+  },
+  {
+   "default": "0",
+   "fieldname": "signature_required",
+   "fieldtype": "Check",
+   "label": "Signature Required"
+  },
+  {
+   "fieldname": "labels_section",
+   "fieldtype": "Section Break",
+   "label": "Labels"
+  },
+  {
+   "default": "0",
+   "description": "Printing a label is charged by the courier",
+   "fieldname": "allow_label_printing",
+   "fieldtype": "Check",
+   "label": "Allow Label Printing"
+  },
+  {
+   "description": "The time zone pickup times are booked in, as a zone name such as Australia/Perth. Empty for the pickup address's country's, or the system's.",
+   "fieldname": "pickup_time_zone",
+   "fieldtype": "Data",
+   "label": "Pickup Time Zone"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "webhook_section",
+   "fieldtype": "Section Break",
+   "label": "Tracking Webhook"
+  },
+  {
+   "description": "Paste into Starshipit: Settings > Tracking & notifications > Webhook notifications",
+   "fieldname": "webhook_url",
+   "fieldtype": "Small Text",
+   "is_virtual": 1,
+   "label": "Webhook URL",
+   "read_only": 1
+  },
+  {
+   "description": "Optional. Same secret as set in Starshipit",
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "webhook_token",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Webhook Token",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "store_section",
+   "fieldtype": "Section Break",
+   "label": "Online Store"
+  },
+  {
+   "default": "0",
+   "description": "Offer Starshipit rates to shoppers at checkout (Shop app)",
+   "fieldname": "shop_checkout_rates",
+   "fieldtype": "Check",
+   "label": "Rates at Store Checkout"
+  },
+  {
+   "default": "0",
+   "description": "Tick if the rates Starshipit gives include tax (e.g. GST or VAT), as each courier is set up in Starshipit. A courier that says in its price breakdown whether tax is included is taken at its word. A rate for a parcel sent abroad carries no tax: the store charges it in full.",
+   "fieldname": "rates_include_tax",
+   "fieldtype": "Check",
+   "label": "Rates Include Tax"
+  },
+  {
+   "depends_on": "shop_checkout_rates",
+   "description": "The currency Starshipit's rates are in when its answer doesn't say. Empty for the company's currency.",
+   "fieldname": "rates_currency",
+   "fieldtype": "Link",
+   "label": "Rates Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "0",
+   "depends_on": "shop_checkout_rates",
+   "description": "Starshipit prices a service at 0 when it has no rate for the parcel (a plain label carrier whose custom rates don't cover its weight or address). Tick only if a service priced at 0 really ships free.",
+   "fieldname": "checkout_free_services",
+   "fieldtype": "Check",
+   "label": "Offer Services Priced at 0 as Free"
+  },
+  {
+   "depends_on": "shop_checkout_rates",
+   "description": "Added to every rate at checkout, for what the courier's quoted price leaves out (e.g. a fuel surcharge invoiced later).",
+   "fieldname": "checkout_rate_percent",
+   "fieldtype": "Percent",
+   "label": "Add to Checkout Rates (%)"
+  },
+  {
+   "depends_on": "shop_checkout_rates",
+   "description": "Added to every rate at checkout for each parcel the rate is for, in the store's currency (e.g. a handling fee, or fees invoiced later).",
+   "fieldname": "checkout_rate_fixed",
+   "fieldtype": "Currency",
+   "label": "Add to Checkout Rates (per Parcel)"
+  },
+  {
+   "description": "Service codes to offer, one per line. Empty offers every service",
+   "fieldname": "checkout_services",
+   "fieldtype": "Small Text",
+   "label": "Services at Checkout"
+  },
+  {
+   "fieldname": "column_break_store",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Dispatch address for checkout rates and Shipments of store orders, when the store's warehouse has none of its own",
+   "fieldname": "sender_address",
+   "fieldtype": "Link",
+   "label": "Ship From Address",
+   "options": "Address"
+  },
+  {
+   "description": "Contact on Shipments created from store orders, when their warehouse has no Pickup Contact of its own",
+   "fieldname": "pickup_contact",
+   "fieldtype": "Link",
+   "label": "Pickup Contact",
+   "options": "User"
+  },
+  {
+   "description": "Description of Content on Shipments created from store orders, by any shipping provider",
+   "fieldname": "content_description",
+   "fieldtype": "Data",
+   "label": "Contents Description"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-09 22:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPNext Shipping",
+ "name": "Starshipit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
