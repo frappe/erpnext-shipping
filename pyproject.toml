@@ -21,6 +21,9 @@ build-backend = "flit_core.buildapi"
 line-length = 110
 target-version = "py314"
 
+[tool.ruff.lint]
+typing-modules = ["frappe.types.DF"]
+
 [tool.ruff.format]
 indent-style = "tab"
 docstring-code-format = true

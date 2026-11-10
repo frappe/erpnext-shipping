@@ -47,3 +47,12 @@ The service provider will also provide the shipping label and to generate the la
 #### License
 
 MIT
+
+## Address Lookup
+
+**Address Lookup Settings** suggests addresses while Address Line 1 is typed, in any form or dialog (the Address form, a new Customer's quick entry...). Choosing one fills the street, city, state, postcode and country.
+
+- **Photon**: free, worldwide, from OpenStreetMap. Leave **Photon Server** empty to use komoot's public server (fair use, no uptime promise), or enter your own.
+- **Google Places**: needs a Google Cloud key with Places API (New). **Daily Lookup Limit** caps the requests sent to Google in a day (300 by default, about Google's free 10,000 a month).
+
+The service is called from the site, so the key never reaches browsers, and answers are cached. Other apps can use `erpnext_shipping.erpnext_shipping.address_lookup.suggestions` and `details`; the Shop app does, through its `shop_address_lookup` hook.

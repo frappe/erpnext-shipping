@@ -12,7 +12,8 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/erpnext_shipping/css/erpnext_shipping.css"
-# app_include_js = "/assets/erpnext_shipping/js/erpnext_shipping.js"
+# Address Line 1 suggestions in every form and dialog
+app_include_js = "/assets/erpnext_shipping/js/address_lookup.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/erpnext_shipping/css/erpnext_shipping.css"
@@ -129,3 +130,6 @@ doc_events = {
 		]
 	},
 }
+
+# Shop app (online store): its address forms suggest addresses through this app
+shop_address_lookup = ["erpnext_shipping.erpnext_shipping.address_lookup"]

@@ -1,0 +1,72 @@
+{
+ "actions": [],
+ "creation": "2026-11-10 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "service",
+  "photon_server",
+  "google_api_key",
+  "daily_limit",
+  "help"
+ ],
+ "fields": [
+  {
+   "fieldname": "service",
+   "fieldtype": "Select",
+   "label": "Service",
+   "options": "\nPhoton\nGoogle Places",
+   "description": "Suggests addresses as an address is typed: in Address forms, and in a store's address forms when Shop is installed."
+  },
+  {
+   "fieldname": "photon_server",
+   "fieldtype": "Data",
+   "label": "Photon Server",
+   "depends_on": "eval:doc.service=='Photon'",
+   "description": "Free worldwide addresses from OpenStreetMap. Leave empty for komoot's public server (https://photon.komoot.io), which asks for fair use and promises no uptime, or enter your own Photon server."
+  },
+  {
+   "fieldname": "google_api_key",
+   "fieldtype": "Password",
+   "label": "Google API Key",
+   "depends_on": "eval:doc.service=='Google Places'",
+   "description": "A Google Cloud key with Places API (New). Google gives 10,000 lookups a month free, then charges per lookup."
+  },
+  {
+   "fieldname": "daily_limit",
+   "fieldtype": "Int",
+   "label": "Daily Lookup Limit",
+   "default": "300",
+   "depends_on": "eval:doc.service=='Google Places'",
+   "description": "The most requests sent to Google in a day, so no one can run up a bill. Google's 10,000 free a month is about 330 a day. 0 for no limit."
+  },
+  {
+   "fieldname": "help",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Suggestions are asked for from this site, so the key is never sent to browsers.</p>"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-10 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPNext Shipping",
+ "name": "Address Lookup Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
