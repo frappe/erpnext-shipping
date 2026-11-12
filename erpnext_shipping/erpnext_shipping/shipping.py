@@ -4,6 +4,7 @@ import json
 
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
+from frappe import _
 
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
@@ -78,9 +79,13 @@ def fetch_shipping_rates(
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
 
-	shipment_prices = [item for item in shipment_prices if "total_price" in item]
-	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
-	return shipment_prices
+	return sorted(shipment_prices, key=price_sort_key)
+
+
+def price_sort_key(service):
+	"""Sort priced services by price, services without a price last."""
+	has_no_price = service.get("total_price") is None
+	return (has_no_price, service.get("total_price") or 0)
 
 
 @frappe.whitelist()
@@ -108,6 +113,9 @@ def create_shipment(
 		delivery_notes = []
 
 	service_info = json.loads(service_data)
+	if service_info.get("total_price") is None:
+		frappe.throw(_("Shipping services without a price cannot be booked."))
+
 	shipment_info, pickup_contact, delivery_contact = None, None, None
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
