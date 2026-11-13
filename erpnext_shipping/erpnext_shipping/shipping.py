@@ -4,6 +4,7 @@ import json
 
 import frappe
 from erpnext.stock.doctype.shipment.shipment import get_company_contact
+from frappe import _
 
 from erpnext_shipping.erpnext_shipping.doctype.letmeship.letmeship import (
 	LETMESHIP_PROVIDER,
@@ -19,16 +20,16 @@ from erpnext_shipping.erpnext_shipping.utils import (
 
 @frappe.whitelist()
 def fetch_shipping_rates(
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	parcels,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	parcels: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: float,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
 ):
 	# Return Shipping Rates for the various Shipping Providers
 	shipment_prices = []
@@ -78,28 +79,32 @@ def fetch_shipping_rates(
 		sendcloud_prices = match_parcel_service_type_carrier(sendcloud_prices, "carrier", "service_name")
 		shipment_prices += sendcloud_prices
 
-	shipment_prices = [item for item in shipment_prices if "total_price" in item]
-	shipment_prices = sorted(shipment_prices, key=lambda k: k["total_price"])
-	return shipment_prices
+	return sorted(shipment_prices, key=price_sort_key)
+
+
+def price_sort_key(service):
+	"""Sort priced services by price, services without a price last."""
+	has_no_price = service.get("total_price") is None
+	return (has_no_price, service.get("total_price") or 0)
 
 
 @frappe.whitelist()
 def create_shipment(
-	shipment,
-	pickup_from_type,
-	delivery_to_type,
-	pickup_address_name,
-	delivery_address_name,
-	shipment_parcel,
-	description_of_content,
-	pickup_date,
-	value_of_goods,
-	service_data,
-	shipment_notific_email=None,
-	tracking_notific_email=None,
-	pickup_contact_name=None,
-	delivery_contact_name=None,
-	delivery_notes=None,
+	shipment: str,
+	pickup_from_type: str,
+	delivery_to_type: str,
+	pickup_address_name: str,
+	delivery_address_name: str,
+	shipment_parcel: str,
+	description_of_content: str,
+	pickup_date: str,
+	value_of_goods: float,
+	service_data: str,
+	shipment_notific_email: str | None = None,
+	tracking_notific_email: str | None = None,
+	pickup_contact_name: str | None = None,
+	delivery_contact_name: str | None = None,
+	delivery_notes: str | list | None = None,
 ):
 	if isinstance(delivery_notes, str):
 		delivery_notes = json.loads(delivery_notes)
@@ -108,6 +113,9 @@ def create_shipment(
 		delivery_notes = []
 
 	service_info = json.loads(service_data)
+	if service_info.get("total_price") is None:
+		frappe.throw(_("Shipping services without a price cannot be booked."))
+
 	shipment_info, pickup_contact, delivery_contact = None, None, None
 	pickup_address = get_address(pickup_address_name)
 	delivery_address = get_address(delivery_address_name)
