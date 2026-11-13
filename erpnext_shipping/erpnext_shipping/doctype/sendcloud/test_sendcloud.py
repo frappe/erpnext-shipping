@@ -51,6 +51,10 @@ class TestSendCloud(FrappeTestCase):
 		settings.save()
 
 	def make_address(self, title):
+		# ERPNext renders the address on save, which needs an Address Template
+		if not frappe.db.exists("Address Template", "Germany"):
+			frappe.get_doc({"doctype": "Address Template", "country": "Germany"}).insert()
+
 		return frappe.get_doc(
 			{
 				"doctype": "Address",
