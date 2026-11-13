@@ -403,6 +403,10 @@ class SendCloudUtils:
 				float(price_data.get("value", 0)), parcels
 			)
 			available_service.currency = price_data.get("currency")
+		else:
+			quote_error = service.get("quote_error") or {}
+			available_service.quote_error_title = quote_error.get("title")
+			available_service.quote_error_description = quote_error.get("description")
 
 		return available_service
 
