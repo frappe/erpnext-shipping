@@ -12,28 +12,31 @@
 				</thead>
 				<tbody>
 					{% for (var i = 0; i < data.preferred_services.length; i++) { %}
-						<tr id="data-preferred-{{i}}">
-							<td class="service-info" style="width:20%;">{{ data.preferred_services[i].service_provider }}</td>
-							<td class="service-info" style="width:20%;">{{ data.preferred_services[i].carrier }}</td>
-							<td class="service-info" style="width:40%;">{{ data.preferred_services[i].service_name }}</td>
-							{% var service = data.preferred_services[i]; var has_price = service.total_price != null; %}
-							<td class="service-info" style="width:20%;">
-								{% if (has_price) { %}
-									{{ format_currency(service.total_price, service.currency, 2) }}
-								{% } else { %}
-									<span class="text-muted" title="{{ frappe.utils.escape_html(service.quote_error_description || '') }}">
+						{% var service = data.preferred_services[i]; var has_price = service.total_price != null; %}
+						<tr id="data-preferred-{{i}}" class="{% if (!has_price) { %}unpriced-service{% } %}">
+							<td class="service-info" style="width:20%;">{{ service.service_provider }}</td>
+							<td class="service-info" style="width:20%;">{{ service.carrier }}</td>
+							<td class="service-info" style="width:40%;">{{ service.service_name }}</td>
+							{% if (has_price) { %}
+								<td class="service-info" style="width:20%;">{{ format_currency(service.total_price, service.currency, 2) }}</td>
+								<td style="width:10%;vertical-align: middle;">
+									<button
+										data-type="preferred_services"
+										id="data-preferred-{{i}}" type="button" class="btn">
+										{{ __("Select") }}
+									</button>
+								</td>
+							{% } else { %}
+								<td class="service-info" colspan="2">
+									{% if (service.quote_error_description) { %}
+										<span class="unpriced-service-reason" data-toggle="tooltip" title="{{ frappe.utils.escape_html(service.quote_error_description) }}">
+											{{ frappe.utils.escape_html(service.quote_error_title || __("No price available")) }}
+										</span>
+									{% } else { %}
 										{{ frappe.utils.escape_html(service.quote_error_title || __("No price available")) }}
-									</span>
-								{% } %}
-							</td>
-							<td style="width:10%;vertical-align: middle;">
-								<button
-									data-type="preferred_services"
-									id="data-preferred-{{i}}" type="button" class="btn"
-									{% if (!has_price) { %}disabled{% } %}>
-									{{ __("Select") }}
-								</button>
-							</td>
+									{% } %}
+								</td>
+							{% } %}
 						</tr>
 					{% } %}
 				</tbody>
@@ -57,28 +60,31 @@
 				</thead>
 				<tbody>
 					{% for (var i = 0; i < data.other_services.length; i++) { %}
-						<tr id="data-other-{{i}}">
-							<td class="service-info" style="width:20%;">{{ data.other_services[i].service_provider }}</td>
-							<td class="service-info" style="width:20%;">{{ data.other_services[i].carrier }}</td>
-							<td class="service-info" style="width:40%;">{{ data.other_services[i].service_name }}</td>
-							{% var service = data.other_services[i]; var has_price = service.total_price != null; %}
-							<td class="service-info" style="width:20%;">
-								{% if (has_price) { %}
-									{{ format_currency(service.total_price, service.currency, 2) }}
-								{% } else { %}
-									<span class="text-muted" title="{{ frappe.utils.escape_html(service.quote_error_description || '') }}">
+						{% var service = data.other_services[i]; var has_price = service.total_price != null; %}
+						<tr id="data-other-{{i}}" class="{% if (!has_price) { %}unpriced-service{% } %}">
+							<td class="service-info" style="width:20%;">{{ service.service_provider }}</td>
+							<td class="service-info" style="width:20%;">{{ service.carrier }}</td>
+							<td class="service-info" style="width:40%;">{{ service.service_name }}</td>
+							{% if (has_price) { %}
+								<td class="service-info" style="width:20%;">{{ format_currency(service.total_price, service.currency, 2) }}</td>
+								<td style="width:10%;vertical-align: middle;">
+									<button
+										data-type="other_services"
+										id="data-other-{{i}}" type="button" class="btn">
+										{{ __("Select") }}
+									</button>
+								</td>
+							{% } else { %}
+								<td class="service-info" colspan="2">
+									{% if (service.quote_error_description) { %}
+										<span class="unpriced-service-reason" data-toggle="tooltip" title="{{ frappe.utils.escape_html(service.quote_error_description) }}">
+											{{ frappe.utils.escape_html(service.quote_error_title || __("No price available")) }}
+										</span>
+									{% } else { %}
 										{{ frappe.utils.escape_html(service.quote_error_title || __("No price available")) }}
-									</span>
-								{% } %}
-							</td>
-							<td style="width:10%;vertical-align: middle;">
-								<button
-									data-type="other_services"
-									id="data-other-{{i}}" type="button" class="btn"
-									{% if (!has_price) { %}disabled{% } %}>
-									{{ __("Select") }}
-								</button>
-							</td>
+									{% } %}
+								</td>
+							{% } %}
 						</tr>
 					{% } %}
 				</tbody>
@@ -109,6 +115,15 @@
 }
 .btn:hover {
 	background-color: #dedede;
+}
+.unpriced-service td {
+	color: var(--text-muted);
+}
+.table-hover tbody tr.unpriced-service:hover {
+	background-color: transparent;
+}
+.unpriced-service-reason {
+	cursor: pointer;
 }
 .ship {
 	font-size: 16px;

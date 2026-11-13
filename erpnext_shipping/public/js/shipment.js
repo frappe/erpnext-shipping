@@ -181,6 +181,7 @@ function select_from_available_services(frm, available_services) {
 			data: arranged_services,
 		})
 	);
+	dialog.$body.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover", container: "body" });
 
 	dialog.$body.on("click", ".btn", function () {
 		let service_type = $(this).attr("data-type");
