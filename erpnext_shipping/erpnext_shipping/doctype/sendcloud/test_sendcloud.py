@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud import SendCloudUtils
 from erpnext_shipping.erpnext_shipping.shipping import create_shipment, fetch_shipping_rates
 
 REQUESTS_POST = "erpnext_shipping.erpnext_shipping.doctype.sendcloud.sendcloud.requests.post"
@@ -114,3 +115,43 @@ class TestSendCloud(FrappeTestCase):
 			)
 
 		post.assert_not_called()
+
+	def test_label_uses_delivery_company_name(self):
+		delivery_address = frappe._dict(
+			address_title="Kunde GmbH-Shipping",
+			address_line1="Lieferweg 2",
+			pincode="20095",
+			city="Hamburg",
+			country_code="de",
+		)
+		pickup_address = frappe._dict(
+			address_title="Test Pickup",
+			address_line1="Teststrasse 1",
+			pincode="10115",
+			city="Berlin",
+			country_code="de",
+		)
+		contact = frappe._dict(first_name="Erika", last_name="Muster", phone="+49 30 1234", email_id="")
+		service_info = {
+			"carrier": "UPS",
+			"service_name": "UPS Standard",
+			"service_id": "ups:standard",
+			"total_price": 9.5,
+		}
+		response = MagicMock()
+		response.json.return_value = {"data": {"parcels": [{"id": 1, "tracking_number": "1Z"}]}}
+
+		with patch(REQUESTS_POST, return_value=response) as post:
+			SendCloudUtils().create_shipment(
+				shipment="SHIP-0001",
+				pickup_address=pickup_address,
+				pickup_contact=contact,
+				delivery_address=delivery_address,
+				delivery_company_name="Kunde GmbH",
+				delivery_contact=contact,
+				service_info=service_info,
+				shipment_parcel=json.dumps([{"weight": 1, "count": 1}]),
+			)
+
+		payload = post.call_args.kwargs["json"]
+		self.assertEqual(payload["to_address"]["company_name"], "Kunde GmbH")

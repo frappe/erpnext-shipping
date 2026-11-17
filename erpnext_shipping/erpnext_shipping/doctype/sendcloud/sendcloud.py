@@ -122,6 +122,7 @@ class SendCloudUtils:
 		delivery_contact,
 		service_info,
 		shipment_parcel,
+		delivery_company_name=None,
 	):
 		if not self.enabled or not self.api_key or not self.api_secret:
 			return []
@@ -139,7 +140,7 @@ class SendCloudUtils:
 		payload = {
 			"parcels": parcels,
 			"to_address": {
-				"company_name": delivery_address.address_title,
+				"company_name": delivery_company_name or delivery_address.address_title,
 				"name": f"{delivery_contact.first_name} {delivery_contact.last_name}",
 				"address_line_1": delivery_address.address_line1,
 				"postal_code": delivery_address.pincode,
