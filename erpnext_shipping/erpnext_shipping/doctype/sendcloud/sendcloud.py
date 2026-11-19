@@ -36,6 +36,7 @@ class SendCloudUtils:
 		self.api_key = settings.api_key
 		self.api_secret = settings.get_password("api_secret")
 		self.enabled = settings.enabled
+		self.use_party_name_as_company_name = settings.use_party_name_as_company_name
 
 		if not self.enabled:
 			link = get_link_to_form("SendCloud", "SendCloud", _("SendCloud Settings"))
@@ -137,10 +138,14 @@ class SendCloudUtils:
 
 		house_number, address = self.extract_house_number(pickup_address.address_line1)
 
+		delivery_label_company_name = delivery_address.address_title
+		if self.use_party_name_as_company_name and delivery_company_name:
+			delivery_label_company_name = delivery_company_name
+
 		payload = {
 			"parcels": parcels,
 			"to_address": {
-				"company_name": delivery_company_name or delivery_address.address_title,
+				"company_name": delivery_label_company_name,
 				"name": f"{delivery_contact.first_name} {delivery_contact.last_name}",
 				"address_line_1": delivery_address.address_line1,
 				"postal_code": delivery_address.pincode,

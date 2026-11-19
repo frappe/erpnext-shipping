@@ -49,6 +49,7 @@ class TestSendCloud(FrappeTestCase):
 		settings.enabled = 1
 		settings.api_key = "test-key"
 		settings.api_secret = "test-secret"
+		settings.use_party_name_as_company_name = 0
 		settings.save()
 
 	def make_address(self, title):
@@ -120,7 +121,22 @@ class TestSendCloud(FrappeTestCase):
 
 		post.assert_not_called()
 
-	def test_label_uses_delivery_company_name(self):
+	def test_label_uses_address_title_by_default(self):
+		company_name = self.announce_and_get_company_name(delivery_company_name="Kunde GmbH")
+		self.assertEqual(company_name, "Kunde GmbH-Shipping")
+
+	def test_label_uses_party_name_when_enabled(self):
+		frappe.db.set_single_value("SendCloud", "use_party_name_as_company_name", 1)
+		company_name = self.announce_and_get_company_name(delivery_company_name="Kunde GmbH")
+		self.assertEqual(company_name, "Kunde GmbH")
+
+	def test_label_falls_back_to_address_title_without_party(self):
+		frappe.db.set_single_value("SendCloud", "use_party_name_as_company_name", 1)
+		company_name = self.announce_and_get_company_name(delivery_company_name=None)
+		self.assertEqual(company_name, "Kunde GmbH-Shipping")
+
+	def announce_and_get_company_name(self, delivery_company_name):
+		"""Announce a shipment with a mocked SendCloud API and return the company name sent."""
 		delivery_address = frappe._dict(
 			address_title="Kunde GmbH-Shipping",
 			address_line1="Lieferweg 2",
@@ -151,11 +167,11 @@ class TestSendCloud(FrappeTestCase):
 				pickup_address=pickup_address,
 				pickup_contact=contact,
 				delivery_address=delivery_address,
-				delivery_company_name="Kunde GmbH",
+				delivery_company_name=delivery_company_name,
 				delivery_contact=contact,
 				service_info=service_info,
 				shipment_parcel=json.dumps([{"weight": 1, "count": 1}]),
 			)
 
 		payload = post.call_args.kwargs["json"]
-		self.assertEqual(payload["to_address"]["company_name"], "Kunde GmbH")
+		return payload["to_address"]["company_name"]
