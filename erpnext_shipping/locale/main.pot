@@ -1,0 +1,386 @@
+# Translations template for ERPNext Shipping.
+# Copyright (C) 2026 Frappe
+# This file is distributed under the same license as the ERPNext Shipping project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ERPNext Shipping VERSION\n"
+"Report-Msgid-Bugs-To: developers@frappe.io\n"
+"POT-Creation-Date: 2026-11-26 15:01+0053\n"
+"PO-Revision-Date: 2026-11-26 15:01+0053\n"
+"Last-Translator: developers@frappe.io\n"
+"Language-Team: developers@frappe.io\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#. Label of the api_id (Data) field in DocType 'LetMeShip'
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.json:24
+msgid "API ID"
+msgstr ""
+
+#. Label of the api_password (Password) field in DocType 'LetMeShip'
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.json:30
+msgid "API Password"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:72
+#, python-brace-format
+msgid ""
+"An Error occurred while fetching LetMeShip {0}:\n"
+"{1}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:111
+#, python-brace-format
+msgid "An Error occurred while {0}. {1}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:349
+msgid "An error occurred while downloading label from SendCloud"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:171
+msgid "Available Services"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:258
+#, python-brace-format
+msgid "Cancelled SendCloud shipment IDs: {0}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:67
+#, python-brace-format
+msgid "Country Code not found for {0}"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:197
+msgid "Creating Shipment"
+msgstr ""
+
+#: erpnext_shipping/custom_fields.py:16
+msgid "Delivery Type"
+msgstr ""
+
+#: erpnext_shipping/config/desktop.py:11
+msgid "ERPNext Shipping"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:235
+#, python-brace-format
+msgid "Error occurred while creating shipment for parcel {0}:"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:200
+#, python-brace-format
+msgid "Error occurred while printing Shipment: {0}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:232
+#, python-brace-format
+msgid "Error occurred while updating Shipment: {0}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:267
+msgid "Failed to cancel SendCloud shipment IDs (manual cleanup needed):"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:7
+msgid "Fetch Shipping Rates"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:64
+msgid "Fetching Shipping Rates"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:10
+msgid "If your shipment contains packages with varying weights, the estimated shipping rates may differ from the final price charged by your carrier. Do you wish to proceed?"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:50
+msgid "Incomplete Shipment"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:37
+msgid "Invalid API ID or Password"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:298
+#, python-brace-format
+msgid "Invalid JSON response (HTTP {0}): {1}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:334
+msgid "Label Not Found"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:78
+msgid "Last Name is mandatory to continue."
+msgstr ""
+
+#. Name of a DocType
+#. Label of a Workspace Sidebar Item
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.json:52
+#: erpnext_shipping/workspace_sidebar/shipping.json:48
+msgid "LetMeShip"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:143
+msgid "LetMeShip booking needs parcel dimensions (length, width, height)."
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:93
+msgid "LetMeShip rates need parcel dimensions (length, width, height)."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment_service_selector.html:47
+msgid "No Preferred Services Available"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment_service_selector.html:95
+#: erpnext_shipping/public/js/shipment_service_selector.html:103
+msgid "No Services Available"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:85
+msgid "No Shipment Services available"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:198
+msgid "No parcel data returned from SendCloud."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment_service_selector.html:33
+#: erpnext_shipping/public/js/shipment_service_selector.html:36
+#: erpnext_shipping/public/js/shipment_service_selector.html:81
+#: erpnext_shipping/public/js/shipment_service_selector.html:84
+msgid "No price available"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:104
+msgid "No shipping options found for this destination."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment_service_selector.html:51
+msgid "Other Services"
+msgstr ""
+
+#. Name of a DocType
+#. Label of the parcel_service (Link) field in DocType 'Parcel Service Type'
+#. Label of the parcel_service (Link) field in DocType 'Parcel Service Type
+#. Alias'
+#. Label of a Workspace Sidebar Item
+#: erpnext_shipping/custom_fields.py:24
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service/parcel_service.json:36
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type/parcel_service_type.json:24
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type_alias/parcel_service_type_alias.json:17
+#: erpnext_shipping/public/js/shipment.js:180
+#: erpnext_shipping/workspace_sidebar/shipping.json:59
+msgid "Parcel Service"
+msgstr ""
+
+#. Label of the parcel_service_code (Data) field in DocType 'Parcel Service'
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service/parcel_service.json:24
+msgid "Parcel Service Code"
+msgstr ""
+
+#. Label of the parcel_service_name (Data) field in DocType 'Parcel Service'
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service/parcel_service.json:18
+msgid "Parcel Service Name"
+msgstr ""
+
+#. Name of a DocType
+#. Label of the parcel_service_type (Data) field in DocType 'Parcel Service
+#. Type'
+#. Label of a Workspace Sidebar Item
+#: erpnext_shipping/custom_fields.py:32
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type/parcel_service_type.json:31
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type/parcel_service_type.json:69
+#: erpnext_shipping/workspace_sidebar/shipping.json:70
+msgid "Parcel Service Type"
+msgstr ""
+
+#. Label of the parcel_service_type_alias (Table) field in DocType 'Parcel
+#. Service Type'
+#. Name of a DocType
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type/parcel_service_type.json:47
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type_alias/parcel_service_type_alias.json:34
+msgid "Parcel Service Type Alias"
+msgstr ""
+
+#. Label of the parcel_type_alias (Data) field in DocType 'Parcel Service Type
+#. Alias'
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type_alias/parcel_service_type_alias.json:25
+msgid "Parcel Type Alias"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:58
+msgid "Pickup contact phone is required."
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:61
+msgid "Pickup contact phone must consist of a '+' followed by one or more digits."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:180
+msgid "Platform"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:48
+#, python-brace-format
+msgid "Please add a valid pincode in Address {0}."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:46
+#, python-brace-format
+msgid "Please complete Shipment (ID: {0}) on {1} and Update Tracking."
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:43
+#, python-brace-format
+msgid "Please enable SendCloud Integration in {0}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:332
+#, python-brace-format
+msgid "Please make sure Shipment (ID: {0}), exists and is a complete Shipment on SendCloud."
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/utils.py:77
+#, python-brace-format
+msgid "Please set Last Name for Contact {0}"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment_service_selector.html:3
+msgid "Preferred Services"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:24
+msgid "Print Shipping Label"
+msgstr ""
+
+#. Description of the 'Use Party Name as Company Name' (Check) field in DocType
+#. 'LetMeShip'
+#. Description of the 'Use Party Name as Company Name' (Check) field in DocType
+#. 'SendCloud'
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.json:41
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.json:34
+msgid "Print the name of the Customer, Supplier or Company of the Shipment as company name on the label. If unchecked, the address title is used."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:100
+msgid "Printing Shipping Label"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:282
+msgid "Request failed"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:165
+msgid "Select Service to Create Shipment"
+msgstr ""
+
+#. Name of a DocType
+#. Label of a Workspace Sidebar Item
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.json:46
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:101
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:104
+#: erpnext_shipping/workspace_sidebar/shipping.json:36
+msgid "SendCloud"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:42
+msgid "SendCloud Settings"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:462
+msgid "SendCloud ignores incomplete parcel dimensions; provide length, width, and height or leave all empty."
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:224
+msgid "Shipment Created"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:92
+msgid "Shipment already created"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:222
+#, python-brace-format
+msgid "Shipment {1} has been created with {0}."
+msgstr ""
+
+#: erpnext_shipping/custom_fields.py:9
+msgid "Shipping Details"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/shipping.py:117
+msgid "Shipping services without a price cannot be booked."
+msgstr ""
+
+#. Label of the show_in_preferred_services_list (Check) field in DocType
+#. 'Parcel Service Type'
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service_type/parcel_service_type.json:62
+msgid "Show in Preferred Services List"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.py:40
+#, python-brace-format
+msgid "There was an error with the LetMeShip API. HTTP Status Code: {0}"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:40
+msgid "Track Status"
+msgstr ""
+
+#: erpnext_shipping/custom_fields.py:45
+msgid "Tracking Number"
+msgstr ""
+
+#: erpnext_shipping/custom_fields.py:69
+msgid "Tracking Status Information"
+msgstr ""
+
+#. Label of the url_reference (Data) field in DocType 'Parcel Service'
+#: erpnext_shipping/erpnext_shipping/doctype/parcel_service/parcel_service.json:29
+msgid "URL Reference"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:310
+#, python-brace-format
+msgid "Unexpected cancel response: {0}"
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:214
+msgid "Unexpected error. See Error Log."
+msgstr ""
+
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.py:292
+#, python-brace-format
+msgid "Unexpected response (HTTP {0}): {1}"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:32
+msgid "Update Tracking"
+msgstr ""
+
+#: erpnext_shipping/public/js/shipment.js:131
+msgid "Updating Tracking"
+msgstr ""
+
+#. Label of the use_party_name_as_company_name (Check) field in DocType
+#. 'LetMeShip'
+#. Label of the use_party_name_as_company_name (Check) field in DocType
+#. 'SendCloud'
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.json:44
+#: erpnext_shipping/erpnext_shipping/doctype/sendcloud/sendcloud.json:37
+msgid "Use Party Name as Company Name"
+msgstr ""
+
+#. Label of the use_test_environment (Check) field in DocType 'LetMeShip'
+#: erpnext_shipping/erpnext_shipping/doctype/letmeship/letmeship.json:37
+msgid "Use Test Environment"
+msgstr ""
+
