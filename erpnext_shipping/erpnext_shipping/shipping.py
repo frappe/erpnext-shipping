@@ -150,6 +150,7 @@ def create_shipment(
 		shipment_info = sendcloud.create_shipment(
 			shipment=shipment,
 			delivery_address=delivery_address,
+			delivery_company_name=delivery_company_name,
 			pickup_address=pickup_address,
 			pickup_contact=pickup_contact,
 			shipment_parcel=shipment_parcel,
