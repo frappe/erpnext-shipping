@@ -46,11 +46,7 @@
  ],
  "issingle": 1,
  "links": [],
-<<<<<<< HEAD
- "modified": "2024-04-22 17:42:04.777538",
-=======
  "modified": "2026-11-19 16:12:59.347422",
->>>>>>> 016d776 (feat: make company name on shipping label configurable (WRT-9) (#126))
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "LetMeShip",

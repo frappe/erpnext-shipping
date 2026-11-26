@@ -40,11 +40,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
-<<<<<<< HEAD
- "modified": "2024-04-22 17:43:51.711897",
-=======
  "modified": "2026-11-19 20:15:40.672977",
->>>>>>> 016d776 (feat: make company name on shipping label configurable (WRT-9) (#126))
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "SendCloud",
