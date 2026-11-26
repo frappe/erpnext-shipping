@@ -7,7 +7,8 @@
  "field_order": [
   "enabled",
   "api_key",
-  "api_secret"
+  "api_secret",
+  "use_party_name_as_company_name"
  ],
  "fields": [
   {
@@ -27,12 +28,19 @@
    "fieldtype": "Password",
    "label": "API Secret",
    "mandatory_depends_on": "enabled"
+  },
+  {
+   "default": "0",
+   "description": "Print the name of the Customer, Supplier or Company of the Shipment as company name on the label. If unchecked, the address title is used.",
+   "fieldname": "use_party_name_as_company_name",
+   "fieldtype": "Check",
+   "label": "Use Party Name as Company Name"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-04-22 17:43:51.711897",
+ "modified": "2026-11-19 20:15:40.672977",
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "SendCloud",
