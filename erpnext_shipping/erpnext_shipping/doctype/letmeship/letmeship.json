@@ -8,7 +8,8 @@
   "enabled",
   "use_test_environment",
   "api_id",
-  "api_password"
+  "api_password",
+  "use_party_name_as_company_name"
  ],
  "fields": [
   {
@@ -34,11 +35,22 @@
    "fieldname": "use_test_environment",
    "fieldtype": "Check",
    "label": "Use Test Environment"
+  },
+  {
+   "default": "1",
+   "description": "Print the name of the Customer, Supplier or Company of the Shipment as company name on the label. If unchecked, the address title is used.",
+   "fieldname": "use_party_name_as_company_name",
+   "fieldtype": "Check",
+   "label": "Use Party Name as Company Name"
   }
  ],
  "issingle": 1,
  "links": [],
+<<<<<<< HEAD
  "modified": "2024-04-22 17:42:04.777538",
+=======
+ "modified": "2026-11-19 16:12:59.347422",
+>>>>>>> 016d776 (feat: make company name on shipping label configurable (WRT-9) (#126))
  "modified_by": "Administrator",
  "module": "ERPNext Shipping",
  "name": "LetMeShip",

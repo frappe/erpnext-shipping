@@ -33,6 +33,22 @@ For the 'compare shipping rates' feature to work as expected, you need to genera
 
 ![LetMeShip 2020-08-05 09-54-28](https://user-images.githubusercontent.com/17470909/89377411-500c4f80-d724-11ea-8fe5-b11fec2a5c27.png)
 
+### Company Name on the Label
+
+The **SendCloud** and **LetMeShip** settings have the checkbox _Use Party Name as Company Name_. It decides what is printed as the recipient's company name on the shipping label:
+
+- **Checked:** the name of the **Customer**, **Supplier** or **Company** selected as recipient in the **Shipment**. If the **Shipment** has no recipient linked, the address title is used instead.
+- **Unchecked:** the _Address Title_ of the delivery address.
+
+If you don't change this setting, each provider keeps its previous behavior:
+
+| Provider | Default | Printed company name |
+|---|---|---|
+| SendCloud | unchecked | _Address Title_ of the delivery address |
+| LetMeShip | checked | Name of the recipient party |
+
+Existing sites get the same defaults on update, so labels don't change unless you change the setting.
+
 ### Fetch Shipping Rates
 ![core2](https://user-images.githubusercontent.com/17470909/89377460-70d4a500-d724-11ea-8550-a2813b936651.gif)
 
