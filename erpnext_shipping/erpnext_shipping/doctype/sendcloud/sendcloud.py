@@ -36,7 +36,6 @@ class SendCloudUtils:
 		self.api_key = settings.api_key
 		self.api_secret = settings.get_password("api_secret")
 		self.enabled = settings.enabled
-		# .get() keeps SendCloud working between a code update and the migration that adds the field
 		self.use_party_name_as_company_name = settings.get("use_party_name_as_company_name")
 
 		if not self.enabled:
